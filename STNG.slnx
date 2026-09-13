@@ -1,0 +1,23 @@
+<Solution>
+    <Configurations>
+        <Platform Name="Any CPU" />
+    </Configurations>
+    <Folder Name="/src/">
+        <Project Path="src/STNG.Domain/STNG.Domain.csproj" />
+        <Project Path="src/STNG.Application/STNG.Application.csproj" />
+        <Project Path="src/STNG.EntityFrameworkCore/STNG.EntityFrameworkCore.csproj" />
+        <Project Path="src/STNG.Domain.Shared/STNG.Domain.Shared.csproj" />
+        <Project Path="src/STNG.Application.Contracts/STNG.Application.Contracts.csproj" />
+        <Project Path="src/STNG.HttpApi/STNG.HttpApi.csproj" />
+        <Project Path="src/STNG.HttpApi.Client/STNG.HttpApi.Client.csproj" />
+        <Project Path="src/STNG.HttpApi.Host/STNG.HttpApi.Host.csproj" />
+        <Project Path="src/STNG.DbMigrator/STNG.DbMigrator.csproj" />
+    </Folder>
+    <Folder Name="/test/">
+        <Project Path="test/STNG.Application.Tests/STNG.Application.Tests.csproj" />
+        <Project Path="test/STNG.EntityFrameworkCore.Tests/STNG.EntityFrameworkCore.Tests.csproj" />
+        <Project Path="test/STNG.TestBase/STNG.TestBase.csproj" />
+        <Project Path="test/STNG.Domain.Tests/STNG.Domain.Tests.csproj" />
+        <Project Path="test/STNG.HttpApi.Client.ConsoleTestApp/STNG.HttpApi.Client.ConsoleTestApp.csproj" />
+    </Folder>
+</Solution>
