@@ -21,7 +21,7 @@ public class STNGDbContext :
     AbpDbContext<STNGDbContext>,
     IIdentityDbContext
 {
-    /* Add DbSet properties for your Aggregate Roots / Entities here. */
+    public DbSet<STNG.Parents.Parent> Parents { get; set; }
 
 
     #region Entities from the modules
@@ -69,6 +69,7 @@ public class STNGDbContext :
         builder.ConfigureIdentity();
         builder.ConfigureOpenIddict();
         builder.ConfigureBlobStoring();
+        builder.ApplyConfiguration(new ParentConfiguration());
 
         /* Configure your own tables/entities inside here */
 
