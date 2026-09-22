@@ -13,6 +13,7 @@ namespace STNG.EntityFrameworkCore;
 
 [DependsOn(
     typeof(STNGApplicationTestModule),
+    typeof(Volo.Abp.Identity.AspNetCore.AbpIdentityAspNetCoreModule),
     typeof(STNGEntityFrameworkCoreModule),
     typeof(AbpEntityFrameworkCoreSqliteModule)
 )]
@@ -38,6 +39,8 @@ public class STNGEntityFrameworkCoreTestModule : AbpModule
             options.IsDynamicPermissionStoreEnabled = false;
         });
         context.Services.AddSingleton<STNG.Authentication.RecordingEmailSender>();
+        context.Services.AddSingleton<STNG.Authentication.TestClock>();
+        context.Services.AddSingleton<Volo.Abp.Timing.IClock>(sp => sp.GetRequiredService<STNG.Authentication.TestClock>());
         context.Services.AddTransient<Volo.Abp.Emailing.IEmailSender>(sp => sp.GetRequiredService<STNG.Authentication.RecordingEmailSender>());
         Configure<STNG.Authentication.EmailOtpOptions>(options =>
             options.HashKey = System.Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)));
