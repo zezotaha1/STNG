@@ -6,7 +6,7 @@ using Volo.Abp.Auditing;
 
 namespace STNG.Controllers;
 
-[AllowAnonymous, DisableAuditing]
+[ApiController, AllowAnonymous, DisableAuditing]
 [Route("api/auth/parent")]
 public class ParentEmailVerificationController : STNGController
 {

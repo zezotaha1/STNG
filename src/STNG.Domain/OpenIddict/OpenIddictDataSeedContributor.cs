@@ -46,6 +46,17 @@ public class OpenIddictDataSeedContributor : OpenIddictDataSeedContributorBase, 
 
     private async Task CreateApplicationsAsync()
     {
+        await CreateOrUpdateApplicationAsync(
+            applicationType: OpenIddictConstants.ApplicationTypes.Native,
+            name: STNG.Authentication.ParentAuthenticationConsts.MobileClientId,
+            type: OpenIddictConstants.ClientTypes.Public,
+            consentType: OpenIddictConstants.ConsentTypes.Implicit,
+            displayName: "STNG Parent Mobile",
+            secret: null,
+            grantTypes: new List<string> { OpenIddictConstants.GrantTypes.Password, OpenIddictConstants.GrantTypes.RefreshToken },
+            scopes: new List<string> { OpenIddictConstants.Permissions.Scopes.Profile, OpenIddictConstants.Permissions.Scopes.Email,
+                OpenIddictConstants.Permissions.Scopes.Roles, "STNG" });
+
         var commonScopes = new List<string> {
             OpenIddictConstants.Permissions.Scopes.Address,
             OpenIddictConstants.Permissions.Scopes.Email,
@@ -61,9 +72,9 @@ public class OpenIddictDataSeedContributor : OpenIddictDataSeedContributorBase, 
         // Console Test / Angular Client
         
         var appClientId = configurationSection["STNG_App:ClientId"];
-        if (!appClientId.IsNullOrWhiteSpace())
+        if (!appClientId.IsNullOrWhiteSpace() && !configurationSection["STNG_App:RootUrl"].IsNullOrWhiteSpace())
         {
-            var appClientRootUrl = configurationSection["STNG_App:RootUrl"]?.TrimEnd('/');
+            var appClientRootUrl = configurationSection["STNG_App:RootUrl"]!.TrimEnd('/');
             await CreateOrUpdateApplicationAsync(
                 applicationType: OpenIddictConstants.ApplicationTypes.Web,
                 name: appClientId!,
@@ -73,11 +84,7 @@ public class OpenIddictDataSeedContributor : OpenIddictDataSeedContributorBase, 
                 secret: null,
                 grantTypes: new List<string> {
                     OpenIddictConstants.GrantTypes.AuthorizationCode,
-                    OpenIddictConstants.GrantTypes.Password,
-                    OpenIddictConstants.GrantTypes.ClientCredentials,
                     OpenIddictConstants.GrantTypes.RefreshToken,
-                    "LinkLogin",
-                    "Impersonation"
                 },
                 scopes: commonScopes,
                 redirectUris: new List<string> { appClientRootUrl },
@@ -95,9 +102,9 @@ public class OpenIddictDataSeedContributor : OpenIddictDataSeedContributorBase, 
 
         // Swagger Client
         var swaggerClientId = configurationSection["STNG_Swagger:ClientId"];
-        if (!swaggerClientId.IsNullOrWhiteSpace())
+        if (!swaggerClientId.IsNullOrWhiteSpace() && !configurationSection["STNG_Swagger:RootUrl"].IsNullOrWhiteSpace())
         {
-            var swaggerRootUrl = configurationSection["STNG_Swagger:RootUrl"]?.TrimEnd('/');
+            var swaggerRootUrl = configurationSection["STNG_Swagger:RootUrl"]!.TrimEnd('/');
 
             await CreateOrUpdateApplicationAsync(
                 applicationType: OpenIddictConstants.ApplicationTypes.Web,
