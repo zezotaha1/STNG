@@ -39,6 +39,9 @@ using Volo.Abp.OpenIddict;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Studio.Client.AspNetCore;
 using Volo.Abp.Security.Claims;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Http;
 
 namespace STNG;
 
@@ -91,11 +94,21 @@ public class STNGHttpApiHostModule : AbpModule
         var configuration = context.Services.GetConfiguration();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
 
-        if (!configuration.GetValue<bool>("App:DisablePII"))
+        Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = false;
+        Microsoft.IdentityModel.Logging.IdentityModelEventSource.LogCompleteSecurityArtifact = false;
+        context.Services.AddRateLimiter(options =>
         {
-            Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
-            Microsoft.IdentityModel.Logging.IdentityModelEventSource.LogCompleteSecurityArtifact = true;
-        }
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(http =>
+                http.Request.Path.StartsWithSegments("/api/auth") || http.Request.Path.StartsWithSegments("/connect/token")
+                    ? RateLimitPartition.GetFixedWindowLimiter(http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = configuration.GetValue("Authentication:RequestsPerMinute", 20),
+                            Window = TimeSpan.FromMinutes(1), QueueLimit = 0
+                        })
+                    : RateLimitPartition.GetNoLimiter("other"));
+        });
 
         if (!configuration.GetValue<bool>("AuthServer:RequireHttpsMetadata"))
         {
@@ -272,6 +285,7 @@ public class STNGHttpApiHostModule : AbpModule
         }
 
         app.UseRouting();
+        app.UseRateLimiter();
         app.MapAbpStaticAssets();
         app.UseAbpStudioLink();
         app.UseAbpSecurityHeaders();

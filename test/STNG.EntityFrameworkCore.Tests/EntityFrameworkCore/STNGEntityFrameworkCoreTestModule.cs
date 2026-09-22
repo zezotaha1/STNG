@@ -37,7 +37,10 @@ public class STNGEntityFrameworkCoreTestModule : AbpModule
             options.SaveStaticPermissionsToDatabase = false;
             options.IsDynamicPermissionStoreEnabled = false;
         });
-        context.Services.AddAlwaysDisableUnitOfWorkTransaction();
+        context.Services.AddSingleton<STNG.Authentication.RecordingEmailSender>();
+        context.Services.AddTransient<Volo.Abp.Emailing.IEmailSender>(sp => sp.GetRequiredService<STNG.Authentication.RecordingEmailSender>());
+        Configure<STNG.Authentication.EmailOtpOptions>(options =>
+            options.HashKey = System.Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)));
 
         ConfigureInMemorySqlite(context.Services);
 
