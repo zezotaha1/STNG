@@ -46,7 +46,7 @@ public class ParentRegistrationAppService : STNGAppService, IParentRegistrationA
             { Name = input.FullName.Trim() };
             (await _users.CreateAsync(user, input.Password)).CheckErrors();
             await _parents.InsertAsync(new Parent(GuidGenerator.Create(), user.Id, input.Job));
-            var issued = _codes.Create(user.Id);
+            var issued = _codes.Create(user.Id, user.Email);
             code = issued.Code;
             await _otps.InsertAsync(issued.Otp);
             await unit.CompleteAsync();

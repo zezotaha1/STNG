@@ -1,5 +1,4 @@
 using System;
-using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -37,13 +36,14 @@ public class ParentEmailVerificationAppService : STNGAppService, IParentEmailVer
     [UnitOfWork(IsDisabled = true)]
     public virtual async Task<EmailVerificationResultDto> VerifyAsync(VerifyParentEmailDto input)
     {
-        using var unit = _units.Begin(new AbpUnitOfWorkOptions { IsTransactional = true, IsolationLevel = IsolationLevel.Serializable }, requiresNew: true);
+        using var unit = _units.Begin(requiresNew: true, isTransactional: true);
         var user = await FindParentUserAsync(input.Email);
         if (user == null || user.EmailConfirmed) return new();
         var otp = await FindLatestAsync(user.Id);
         if (otp == null || !otp.IsActive(Clock.Now)) return new();
-        var verified = otp.TryVerify(_codes.Matches(otp, input.Otp), Clock.Now);
-        await _otps.UpdateAsync(otp);
+        var verified = otp.TryVerify(_codes.Matches(otp, input.Otp, user.Email), Clock.Now);
+        // Acquire the OTP concurrency write before Identity can update the same account.
+        await _otps.UpdateAsync(otp, autoSave: true);
         if (verified)
         {
             var identityToken = await _users.GenerateEmailConfirmationTokenAsync(user);
@@ -59,7 +59,7 @@ public class ParentEmailVerificationAppService : STNGAppService, IParentEmailVer
     {
         string code;
         string email;
-        using (var unit = _units.Begin(new AbpUnitOfWorkOptions { IsTransactional = true, IsolationLevel = IsolationLevel.Serializable }, requiresNew: true))
+        using (var unit = _units.Begin(requiresNew: true, isTransactional: true))
         {
             var user = await FindParentUserAsync(input.Email);
             if (user == null || user.EmailConfirmed) return;
@@ -70,9 +70,9 @@ public class ParentEmailVerificationAppService : STNGAppService, IParentEmailVer
                 previous.Invalidate(Clock.Now);
                 await _otps.UpdateAsync(previous, autoSave: true);
             }
-            var issued = _codes.Create(user.Id);
-            while (previous != null && _codes.Matches(previous, issued.Code))
-                issued = _codes.Create(user.Id);
+            var issued = _codes.Create(user.Id, user.Email);
+            while (previous != null && _codes.Matches(previous, issued.Code, user.Email))
+                issued = _codes.Create(user.Id, user.Email);
             code = issued.Code;
             email = user.Email;
             await _otps.InsertAsync(issued.Otp);

@@ -1,4 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
 using Volo.Abp.BlobStoring.Database.EntityFrameworkCore;
@@ -84,5 +88,19 @@ public class STNGDbContext :
         //    b.ConfigureByConvention(); //auto configure for the base class props
         //    //...
         //});
+    }
+
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+        catch (DbUpdateException exception) when (exception.InnerException is SqlException { Number: 2601 or 2627 } &&
+            exception.Entries.Any(entry => entry.Entity is STNG.Parents.Parent or STNG.Authentication.EmailVerificationOtp or IdentityUser))
+        {
+            // A race that passed the application check still loses at the unique constraint.
+            throw new AbpDbConcurrencyException("A concurrent account operation conflicted. Retry the request.", exception);
+        }
     }
 }

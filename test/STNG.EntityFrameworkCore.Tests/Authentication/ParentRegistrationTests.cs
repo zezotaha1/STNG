@@ -38,7 +38,7 @@ public class ParentRegistrationTests : STNGEntityFrameworkCoreTestBase
             var otp = await GetRequiredService<IRepository<EmailVerificationOtp, Guid>>().SingleAsync(x => x.UserId == user.Id);
             otp.CodeHash.ShouldNotBe(code);
             otp.CodeHash.Length.ShouldBe(64);
-            GetRequiredService<EmailOtpManager>().Matches(otp, code).ShouldBeTrue();
+            GetRequiredService<EmailOtpManager>().Matches(otp, code, user.Email).ShouldBeTrue();
         });
     }
 

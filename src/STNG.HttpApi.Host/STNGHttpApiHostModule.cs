@@ -112,6 +112,8 @@ public class STNGHttpApiHostModule : AbpModule
 
         if (!configuration.GetValue<bool>("AuthServer:RequireHttpsMetadata"))
         {
+            if (!hostingEnvironment.IsDevelopment())
+                throw new InvalidOperationException("HTTPS is required for the production authentication server.");
             Configure<OpenIddictServerAspNetCoreOptions>(options =>
             {
                 options.DisableTransportSecurityRequirement = true;
@@ -120,8 +122,6 @@ public class STNGHttpApiHostModule : AbpModule
             Configure<ForwardedHeadersOptions>(options =>
             {
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
-                options.KnownIPNetworks.Clear();
-                options.KnownProxies.Clear();
             });
         }
 
@@ -190,10 +190,6 @@ public class STNGHttpApiHostModule : AbpModule
                 bundle =>
                 {
                     bundle.AddFiles("/global-scripts.js");
-                    if (hostingEnvironment.IsDevelopment())
-                    {
-                        bundle.AddFiles("/dev-login-helper.js");
-                    }
                 }
             );
         });

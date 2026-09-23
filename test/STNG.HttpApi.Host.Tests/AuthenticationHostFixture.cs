@@ -24,6 +24,7 @@ public class AuthenticationHostFixture : WebApplicationFactory<Program>, IAsyncL
     private readonly string _connection = $"Server=(localdb)\\MSSQLLocalDB;Database=STNG_Auth_Tests_{Guid.NewGuid():N};Trusted_Connection=True;TrustServerCertificate=True";
     public HttpClient Client { get; private set; } = null!;
     public RecordingEmailSender Email { get; } = new();
+    public TestClock Clock { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -44,6 +45,7 @@ public class AuthenticationHostFixture : WebApplicationFactory<Program>, IAsyncL
             services.Configure<AbpDbConnectionOptions>(options => options.ConnectionStrings.Default = _connection);
             services.Configure<EmailOtpOptions>(options => options.HashKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
             services.AddSingleton<IEmailSender>(Email);
+            services.AddSingleton<Volo.Abp.Timing.IClock>(Clock);
         });
     }
 
