@@ -1,4 +1,4 @@
-name: STNG Production CI/CD
+name: STNG Main CI
 
 on:
   pull_request:
@@ -15,124 +15,77 @@ permissions:
   contents: read
 
 concurrency:
-  group: stng-production
+  group: stng-main-ci
   cancel-in-progress: false
+
 
 env:
   DOTNET_VERSION: '10.0.x'
 
-  SOLUTION: 'STNG.sln'
-
-  API_PROJECT: 'src/STNG.HttpApi.Host/STNG.HttpApi.Host.csproj'
-
-  PROD_SITE_PATH: 'C:\inetpub\STNG\Api'
-  PROD_BACKUP_PATH: 'C:\Deploy\STNG\Backups'
-  PROD_APP_POOL: 'STNG'
-  PROD_HEALTH_URL: 'https://YOUR-DOMAIN/health-status'
+  SOLUTION: 'STNG.slnx'
 
 
 jobs:
 
-  # ==========================================================
-  # CI
-  # ==========================================================
-
   ci:
+
     name: Build & Test
+
     runs-on: windows-latest
 
     steps:
 
+      # ------------------------------------------------------
+      # Checkout
+      # ------------------------------------------------------
+
       - name: Checkout
         uses: actions/checkout@v7
+
+
+      # ------------------------------------------------------
+      # Setup .NET
+      # ------------------------------------------------------
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+
+      # ------------------------------------------------------
+      # Restore
+      # ------------------------------------------------------
+
       - name: Restore
-        run: dotnet restore $env:SOLUTION
-
-      - name: Build
-        run: >
-          dotnet build
-          $env:SOLUTION
-          --configuration Release
-          --no-restore
-
-      - name: Test
-        run: >
-          dotnet test
-          $env:SOLUTION
-          --configuration Release
-          --no-build
-          --no-restore
-          --verbosity normal
-
-      - name: Publish API
-        run: >
-          dotnet publish
-          $env:API_PROJECT
-          --configuration Release
-          --output ./artifacts/api
-
-      - name: Add deployment script
         shell: pwsh
         run: |
-          New-Item `
-            -ItemType Directory `
-            -Force `
-            -Path "./artifacts/deploy"
-
-          Copy-Item `
-            ".github/scripts/deploy-stng.ps1" `
-            "./artifacts/deploy/deploy-stng.ps1"
-
-      - name: Upload production artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: stng-production-${{ github.sha }}
-          path: ./artifacts
-          if-no-files-found: error
-          retention-days: 7
+          dotnet restore $env:SOLUTION
 
 
-  # ==========================================================
-  # CD
-  # ==========================================================
+      # ------------------------------------------------------
+      # Build
+      # ------------------------------------------------------
 
-  deploy:
-    name: Deploy Production
-    needs: ci
-
-    if: >
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main'
-
-    runs-on:
-      - self-hosted
-      - windows
-      - x64
-      - stng-production
-
-    environment:
-      name: production
-
-    steps:
-
-      - name: Download artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: stng-production-${{ github.sha }}
-          path: package
-
-      - name: Deploy to IIS
-        shell: powershell
+      - name: Build
+        shell: pwsh
         run: |
-          & "$env:GITHUB_WORKSPACE\package\deploy\deploy-stng.ps1" `
-            -SourcePath "$env:GITHUB_WORKSPACE\package\api" `
-            -SitePath "${{ env.PROD_SITE_PATH }}" `
-            -BackupPath "${{ env.PROD_BACKUP_PATH }}" `
-            -AppPoolName "${{ env.PROD_APP_POOL }}" `
-            -HealthUrl "${{ env.PROD_HEALTH_URL }}"
+          dotnet build `
+            $env:SOLUTION `
+            --configuration Release `
+            --no-restore
+
+
+      # ------------------------------------------------------
+      # Tests
+      # ------------------------------------------------------
+
+      - name: Test
+        shell: pwsh
+        run: |
+          dotnet test `
+            $env:SOLUTION `
+            --configuration Release `
+            --no-build `
+            --no-restore `
+            --verbosity normal

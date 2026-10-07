@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using STNG.Authentication;
 using STNG.EntityFrameworkCore;
+using Volo.Abp.AspNetCore.Mvc.Libs;
 using Volo.Abp.Data;
 using Volo.Abp.Emailing;
 using Volo.Abp.EntityFrameworkCore;
@@ -43,6 +44,10 @@ public class AuthenticationHostFixture : WebApplicationFactory<Program>, IAsyncL
         builder.ConfigureTestServices(services =>
         {
             services.Configure<AbpDbConnectionOptions>(options => options.ConnectionStrings.Default = _connection);
+            services.Configure<AbpMvcLibsOptions>(options =>
+            {
+                options.CheckLibs = false;
+            });
             services.Configure<EmailOtpOptions>(options => options.HashKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
             services.AddSingleton<IEmailSender>(Email);
             services.AddSingleton<Volo.Abp.Timing.IClock>(Clock);
@@ -51,11 +56,24 @@ public class AuthenticationHostFixture : WebApplicationFactory<Program>, IAsyncL
 
     public async Task InitializeAsync()
     {
-        Client = CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost:44390"), AllowAutoRedirect = false });
+        STNGEfCoreEntityExtensionMappings.Configure();
+
+        await using (var db = new STNGDbContext(
+            new DbContextOptionsBuilder<STNGDbContext>()
+                .UseSqlServer(_connection)
+                .Options))
+        {
+            await db.Database.MigrateAsync();
+        }
+
+        Client = CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost:44390"),
+            AllowAutoRedirect = false
+        });
+
         await InUnitAsync(async sp =>
         {
-            var db = await sp.GetRequiredService<IDbContextProvider<STNGDbContext>>().GetDbContextAsync();
-            await db.Database.MigrateAsync();
             await sp.GetRequiredService<IDataSeeder>().SeedAsync();
         }, transactional: false);
     }
@@ -70,7 +88,11 @@ public class AuthenticationHostFixture : WebApplicationFactory<Program>, IAsyncL
 
     async Task IAsyncLifetime.DisposeAsync()
     {
-        Client.Dispose();
+        if (Client is not null)
+        {
+            Client.Dispose();
+        }
+
         await DisposeAsync();
         await using var db = new STNGDbContext(new DbContextOptionsBuilder<STNGDbContext>().UseSqlServer(_connection).Options);
         await db.Database.EnsureDeletedAsync();
