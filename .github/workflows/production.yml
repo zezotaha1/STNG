@@ -22,7 +22,7 @@ concurrency:
 env:
   DOTNET_VERSION: '10.0.x'
 
-  SOLUTION: 'STNG.sln'
+  SOLUTION: 'STNG.slnx'
 
 
 jobs:
