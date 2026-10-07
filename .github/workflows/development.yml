@@ -209,6 +209,8 @@ jobs:
       - name: Run STNG DbMigrator
         shell: powershell
         env:
+          DOTNET_ENVIRONMENT: Development
+          ASPNETCORE_ENVIRONMENT: Development
           ConnectionStrings__Default: ${{ secrets.STNG_DEV_CONNECTION_STRING }}
         run: |
           $migratorPath = Join-Path `
