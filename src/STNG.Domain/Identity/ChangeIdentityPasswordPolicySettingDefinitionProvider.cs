@@ -7,6 +7,8 @@ public class ChangeIdentityPasswordPolicySettingDefinitionProvider : SettingDefi
 {
     public override void Define(ISettingDefinitionContext context)
     {
+        var requireConfirmedEmail = context.GetOrNull(IdentitySettingNames.SignIn.RequireConfirmedEmail);
+        if (requireConfirmedEmail != null) requireConfirmedEmail.DefaultValue = true.ToString();
         var requireNonAlphanumeric = context.GetOrNull(IdentitySettingNames.Password.RequireNonAlphanumeric);
         if (requireNonAlphanumeric != null)
         {

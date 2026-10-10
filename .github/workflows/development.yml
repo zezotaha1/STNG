@@ -1,0 +1,261 @@
+name: STNG Development CI/CD
+
+on:
+  pull_request:
+    branches:
+      - develop
+
+  push:
+    branches:
+      - develop
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stng-development
+  cancel-in-progress: false
+
+
+env:
+  DOTNET_VERSION: '10.0.x'
+
+  SOLUTION: 'STNG.slnx'
+
+  API_PROJECT: 'src/STNG.HttpApi.Host/STNG.HttpApi.Host.csproj'
+
+  DB_MIGRATOR_PROJECT: 'src/STNG.DbMigrator/STNG.DbMigrator.csproj'
+
+  DEV_SITE_PATH: 'C:\MySites\STNG'
+
+  DEV_BACKUP_PATH: 'C:\Deploy\STNG\Backups'
+
+  DEV_HEALTH_URL: 'http://localhost:44391/health-status'
+
+
+jobs:
+
+  # ==========================================================
+  # CI
+  # ==========================================================
+
+  ci:
+
+    name: Build & Test
+
+    runs-on: windows-latest
+
+    steps:
+
+      # ------------------------------------------------------
+      # Checkout
+      # ------------------------------------------------------
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+
+      # ------------------------------------------------------
+      # .NET
+      # ------------------------------------------------------
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+
+      # ------------------------------------------------------
+      # Restore
+      # ------------------------------------------------------
+
+      - name: Restore
+        shell: pwsh
+        run: |
+          dotnet restore $env:SOLUTION
+
+
+      # ------------------------------------------------------
+      # Build
+      # ------------------------------------------------------
+
+      - name: Build
+        shell: pwsh
+        run: |
+          dotnet build `
+            $env:SOLUTION `
+            --configuration Release `
+            --no-restore
+
+
+      # ------------------------------------------------------
+      # Tests
+      # ------------------------------------------------------
+
+      - name: Test
+        shell: pwsh
+        run: |
+          dotnet test `
+            $env:SOLUTION `
+            --configuration Release `
+            --no-build `
+            --no-restore `
+            --verbosity normal
+
+
+      # ------------------------------------------------------
+      # Publish API
+      # ------------------------------------------------------
+
+      - name: Publish API
+        shell: pwsh
+        run: |
+          dotnet publish `
+            $env:API_PROJECT `
+            --configuration Release `
+            --no-restore `
+            --output ./artifacts/api
+
+
+      # ------------------------------------------------------
+      # Publish DbMigrator
+      # ------------------------------------------------------
+
+      - name: Publish DbMigrator
+        shell: pwsh
+        run: |
+          dotnet publish `
+            $env:DB_MIGRATOR_PROJECT `
+            --configuration Release `
+            --no-restore `
+            --output ./artifacts/dbmigrator
+
+
+      # ------------------------------------------------------
+      # Add deployment script
+      # ------------------------------------------------------
+
+      - name: Add deployment script
+        shell: pwsh
+        run: |
+          New-Item `
+            -ItemType Directory `
+            -Force `
+            -Path "./artifacts/deploy" |
+            Out-Null
+
+          Copy-Item `
+            ".github/scripts/deploy-stng.ps1" `
+            "./artifacts/deploy/deploy-stng.ps1"
+
+
+      # ------------------------------------------------------
+      # Upload artifact
+      # ------------------------------------------------------
+
+      - name: Upload development artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: stng-development-${{ github.sha }}
+          path: ./artifacts
+          if-no-files-found: error
+          retention-days: 7
+
+
+  # ==========================================================
+  # CD
+  # ==========================================================
+
+  deploy:
+
+    name: Deploy Development
+
+    needs:
+      - ci
+
+    if: >
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop'
+
+    runs-on:
+      - self-hosted
+      - Windows
+      - X64
+      - stng-dev
+
+    environment:
+      name: development
+
+
+    steps:
+
+      # ------------------------------------------------------
+      # Download artifact
+      # ------------------------------------------------------
+
+      - name: Download development artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: stng-development-${{ github.sha }}
+          path: package
+
+
+      # ------------------------------------------------------
+      # Run database migrations
+      # ------------------------------------------------------
+
+      - name: Run STNG DbMigrator
+        shell: powershell
+        env:
+          DOTNET_ENVIRONMENT: Development
+          ASPNETCORE_ENVIRONMENT: Development
+          ConnectionStrings__Default: ${{ secrets.STNG_DEV_CONNECTION_STRING }}
+        run: |
+          $migratorPath = Join-Path `
+            $env:GITHUB_WORKSPACE `
+            "package\dbmigrator"
+
+          $migratorDll = Join-Path `
+            $migratorPath `
+            "STNG.DbMigrator.dll"
+
+          if (-not (Test-Path $migratorDll))
+          {
+              throw "DbMigrator was not found: $migratorDll"
+          }
+
+          Write-Host "Running STNG database migrations..."
+
+          Push-Location $migratorPath
+
+          try
+          {
+              dotnet .\STNG.DbMigrator.dll
+
+              if ($LASTEXITCODE -ne 0)
+              {
+                  throw "STNG DbMigrator failed with exit code $LASTEXITCODE."
+              }
+          }
+          finally
+          {
+              Pop-Location
+          }
+
+          Write-Host "STNG database migration completed successfully."
+
+
+      # ------------------------------------------------------
+      # Deploy API to IIS
+      # ------------------------------------------------------
+
+      - name: Deploy to development IIS
+        shell: powershell
+        run: |
+          & "$env:GITHUB_WORKSPACE\package\deploy\deploy-stng.ps1" `
+            -SourcePath "$env:GITHUB_WORKSPACE\package\api" `
+            -SitePath "${{ env.DEV_SITE_PATH }}" `
+            -BackupPath "${{ env.DEV_BACKUP_PATH }}" `
+            -HealthUrl "${{ env.DEV_HEALTH_URL }}"

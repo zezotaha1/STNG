@@ -37,6 +37,7 @@ public class STNGDomainModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        Configure<Volo.Abp.Timing.AbpClockOptions>(options => options.Kind = DateTimeKind.Utc);
         Configure<AbpMultiTenancyOptions>(options =>
         {
             options.IsEnabled = MultiTenancyConsts.IsEnabled;
@@ -44,8 +45,10 @@ public class STNGDomainModule : AbpModule
 
 
 
-#if DEBUG
-        context.Services.Replace(ServiceDescriptor.Singleton<IEmailSender, NullEmailSender>());
-#endif
+        context.Services.AddOptions<STNG.Authentication.EmailOtpOptions>()
+            .Bind(context.Services.GetConfiguration().GetSection("EmailOtp"))
+            .Validate(options => System.ComponentModel.DataAnnotations.Validator.TryValidateObject(
+                options, new System.ComponentModel.DataAnnotations.ValidationContext(options), null, true),
+                "Invalid email OTP configuration.");
     }
 }

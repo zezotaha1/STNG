@@ -6,11 +6,13 @@ using Volo.Abp.Mapperly;
 using Volo.Abp.FeatureManagement;
 using Volo.Abp.Modularity;
 using Microsoft.Extensions.DependencyInjection;
+using Volo.Abp.FluentValidation;
 
 namespace STNG;
 
 [DependsOn(
     typeof(STNGDomainModule),
+    typeof(AbpFluentValidationModule),
     typeof(STNGApplicationContractsModule),
     typeof(AbpPermissionManagementApplicationModule),
     typeof(AbpFeatureManagementApplicationModule),

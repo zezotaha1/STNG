@@ -28,6 +28,7 @@ public class Program
                 {
                     loggerConfiguration
                         .ReadFrom.Configuration(context.Configuration)
+                        .MinimumLevel.Override("OpenIddict", LogEventLevel.Warning)
                         .ReadFrom.Services(services)
                         .WriteTo.Async(c => c.AbpStudio(services));
                 });

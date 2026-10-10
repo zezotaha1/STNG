@@ -1,0 +1,91 @@
+name: STNG Main CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stng-main-ci
+  cancel-in-progress: false
+
+
+env:
+  DOTNET_VERSION: '10.0.x'
+
+  SOLUTION: 'STNG.slnx'
+
+
+jobs:
+
+  ci:
+
+    name: Build & Test
+
+    runs-on: windows-latest
+
+    steps:
+
+      # ------------------------------------------------------
+      # Checkout
+      # ------------------------------------------------------
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+
+      # ------------------------------------------------------
+      # Setup .NET
+      # ------------------------------------------------------
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+
+      # ------------------------------------------------------
+      # Restore
+      # ------------------------------------------------------
+
+      - name: Restore
+        shell: pwsh
+        run: |
+          dotnet restore $env:SOLUTION
+
+
+      # ------------------------------------------------------
+      # Build
+      # ------------------------------------------------------
+
+      - name: Build
+        shell: pwsh
+        run: |
+          dotnet build `
+            $env:SOLUTION `
+            --configuration Release `
+            --no-restore
+
+
+      # ------------------------------------------------------
+      # Tests
+      # ------------------------------------------------------
+
+      - name: Test
+        shell: pwsh
+        run: |
+          dotnet test `
+            $env:SOLUTION `
+            --configuration Release `
+            --no-build `
+            --no-restore `
+            --verbosity normal
