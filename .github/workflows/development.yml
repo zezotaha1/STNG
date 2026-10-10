@@ -28,11 +28,11 @@ env:
 
   DB_MIGRATOR_PROJECT: 'src/STNG.DbMigrator/STNG.DbMigrator.csproj'
 
-  DEV_SITE_PATH: 'C:\Users\Administrator\Documents\MySites\STNG'
+  DEV_SITE_PATH: 'C:\MySites\STNG'
 
   DEV_BACKUP_PATH: 'C:\Deploy\STNG\Backups'
 
-  DEV_HEALTH_URL: 'http://localhost:44390/health-status'
+  DEV_HEALTH_URL: 'http://localhost:44391/health-status'
 
 
 jobs:
