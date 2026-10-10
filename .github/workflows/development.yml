@@ -28,7 +28,7 @@ env:
 
   DB_MIGRATOR_PROJECT: 'src/STNG.DbMigrator/STNG.DbMigrator.csproj'
 
-  DEV_SITE_PATH: 'C:\Users\Administrator\Documents\MySites\STNG'
+  DEV_SITE_PATH: 'C:\MySites\STNG'
 
   DEV_BACKUP_PATH: 'C:\Deploy\STNG\Backups'
 
