@@ -31,7 +31,7 @@ env:
 
   DEV_BACKUP_PATH: 'C:\Deploy\STNG\Backups'
 
-  DEV_HEALTH_URL: 'http://localhost:44391/health-status'
+  DEV_HEALTH_URL: 'https://localhost:44391/health-status'
 
 jobs:
 
