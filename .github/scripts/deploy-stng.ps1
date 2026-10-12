@@ -674,3 +674,8 @@ finally
             -ErrorAction SilentlyContinue
     }
 }
+
+# Successful deployment must exit with zero.
+# Robocopy returns 1-7 for successful operations; the GitHub Actions PowerShell
+# wrapper otherwise may propagate the last nonzero native exit code.
+exit 0
