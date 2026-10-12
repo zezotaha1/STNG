@@ -18,7 +18,6 @@ concurrency:
   group: stng-development
   cancel-in-progress: false
 
-
 env:
   DOTNET_VERSION: '10.0.x'
 
@@ -32,54 +31,31 @@ env:
 
   DEV_BACKUP_PATH: 'C:\Deploy\STNG\Backups'
 
-  DEV_HEALTH_URL: 'http://localhost:44391/health-status'
-
+  DEV_HEALTH_URL: 'https://zezotaha.ddns.net:44391/health-status'
 
 jobs:
 
   # ==========================================================
   # CI
   # ==========================================================
-
   ci:
-
     name: Build & Test
-
     runs-on: windows-latest
 
     steps:
-
-      # ------------------------------------------------------
-      # Checkout
-      # ------------------------------------------------------
-
       - name: Checkout
         uses: actions/checkout@v7
-
-
-      # ------------------------------------------------------
-      # .NET
-      # ------------------------------------------------------
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-
-      # ------------------------------------------------------
-      # Restore
-      # ------------------------------------------------------
-
       - name: Restore
         shell: pwsh
         run: |
           dotnet restore $env:SOLUTION
-
-
-      # ------------------------------------------------------
-      # Build
-      # ------------------------------------------------------
+          if ($LASTEXITCODE -ne 0) { throw 'Restore failed.' }
 
       - name: Build
         shell: pwsh
@@ -88,11 +64,7 @@ jobs:
             $env:SOLUTION `
             --configuration Release `
             --no-restore
-
-
-      # ------------------------------------------------------
-      # Tests
-      # ------------------------------------------------------
+          if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
 
       - name: Test
         shell: pwsh
@@ -103,11 +75,44 @@ jobs:
             --no-build `
             --no-restore `
             --verbosity normal
+          if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
 
+      # Install the ABP CLI and the client-side libraries required
+      # by the Basic Theme before publishing the API.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
-      # ------------------------------------------------------
-      # Publish API
-      # ------------------------------------------------------
+      - name: Install ABP client libraries
+        shell: pwsh
+        working-directory: src/STNG.HttpApi.Host
+        run: |
+          npm install --global yarn@1.22.22
+          if ($LASTEXITCODE -ne 0) { throw 'Yarn installation failed.' }
+
+          dotnet tool install --global Volo.Abp.Studio.Cli --version 3.1.3
+          if ($LASTEXITCODE -ne 0) { throw 'ABP CLI installation failed.' }
+
+          $abpCli = Join-Path $env:USERPROFILE '.dotnet\tools\abp.exe'
+          if (-not (Test-Path -LiteralPath $abpCli)) {
+            throw "ABP CLI executable not found: $abpCli"
+          }
+
+          & $abpCli install-libs
+          if ($LASTEXITCODE -ne 0) { throw 'abp install-libs failed.' }
+
+          $libsPath = Join-Path (Get-Location) 'wwwroot\libs'
+          if (-not (Test-Path -LiteralPath $libsPath -PathType Container)) {
+            throw "ABP libraries directory is missing: $libsPath"
+          }
+
+          $sample = Get-ChildItem -LiteralPath $libsPath -File -Recurse | Select-Object -First 1
+          if (-not $sample) {
+            throw 'ABP libraries directory is empty.'
+          }
+
+          Write-Host 'ABP client libraries installed successfully.'
 
       - name: Publish API
         shell: pwsh
@@ -117,11 +122,30 @@ jobs:
             --configuration Release `
             --no-restore `
             --output ./artifacts/api
+          if ($LASTEXITCODE -ne 0) { throw 'API publish failed.' }
 
+      # Validate the actual publish output that CD downloads.
+      - name: Verify API publish contents
+        shell: pwsh
+        run: |
+          $apiPath = Join-Path $env:GITHUB_WORKSPACE 'artifacts\api'
+          $hostDll = Join-Path $apiPath 'STNG.HttpApi.Host.dll'
+          $libsPath = Join-Path $apiPath 'wwwroot\libs'
 
-      # ------------------------------------------------------
-      # Publish DbMigrator
-      # ------------------------------------------------------
+          if (-not (Test-Path -LiteralPath $hostDll -PathType Leaf)) {
+            throw "Published API DLL is missing: $hostDll"
+          }
+          if (-not (Test-Path -LiteralPath $libsPath -PathType Container)) {
+            throw "Published ABP libraries directory is missing: $libsPath"
+          }
+          if (-not (Get-ChildItem -LiteralPath $libsPath -File -Recurse | Select-Object -First 1)) {
+            throw 'Published ABP libraries directory is empty.'
+          }
+          if (Test-Path -LiteralPath (Join-Path $apiPath 'openiddict.pfx')) {
+            throw 'Refusing to upload OpenIddict private certificate in the deployment artifact.'
+          }
+
+          Write-Host 'Published API DLL and ABP libraries verified.'
 
       - name: Publish DbMigrator
         shell: pwsh
@@ -131,11 +155,7 @@ jobs:
             --configuration Release `
             --no-restore `
             --output ./artifacts/dbmigrator
-
-
-      # ------------------------------------------------------
-      # Add deployment script
-      # ------------------------------------------------------
+          if ($LASTEXITCODE -ne 0) { throw 'DbMigrator publish failed.' }
 
       - name: Add deployment script
         shell: pwsh
@@ -143,17 +163,13 @@ jobs:
           New-Item `
             -ItemType Directory `
             -Force `
-            -Path "./artifacts/deploy" |
+            -Path './artifacts/deploy' |
             Out-Null
 
           Copy-Item `
-            ".github/scripts/deploy-stng.ps1" `
-            "./artifacts/deploy/deploy-stng.ps1"
-
-
-      # ------------------------------------------------------
-      # Upload artifact
-      # ------------------------------------------------------
+            '.github/scripts/deploy-stng.ps1' `
+            './artifacts/deploy/deploy-stng.ps1' `
+            -ErrorAction Stop
 
       - name: Upload development artifact
         uses: actions/upload-artifact@v7
@@ -163,15 +179,11 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-
   # ==========================================================
   # CD
   # ==========================================================
-
   deploy:
-
     name: Deploy Development
-
     needs:
       - ci
 
@@ -188,68 +200,45 @@ jobs:
     environment:
       name: development
 
-
     steps:
-
-      # ------------------------------------------------------
-      # Download artifact
-      # ------------------------------------------------------
-
       - name: Download development artifact
         uses: actions/download-artifact@v8
         with:
           name: stng-development-${{ github.sha }}
           path: package
 
-
-      # ------------------------------------------------------
-      # Run database migrations
-      # ------------------------------------------------------
-
       - name: Run STNG DbMigrator
         shell: powershell
         env:
-          DOTNET_ENVIRONMENT: Development
-          ASPNETCORE_ENVIRONMENT: Development
+          DOTNET_ENVIRONMENT: Production
+          ASPNETCORE_ENVIRONMENT: Production
           ConnectionStrings__Default: ${{ secrets.STNG_DEV_CONNECTION_STRING }}
         run: |
           $migratorPath = Join-Path `
             $env:GITHUB_WORKSPACE `
-            "package\dbmigrator"
+            'package\dbmigrator'
 
           $migratorDll = Join-Path `
             $migratorPath `
-            "STNG.DbMigrator.dll"
+            'STNG.DbMigrator.dll'
 
-          if (-not (Test-Path $migratorDll))
-          {
-              throw "DbMigrator was not found: $migratorDll"
+          if (-not (Test-Path $migratorDll)) {
+            throw "DbMigrator was not found: $migratorDll"
           }
 
-          Write-Host "Running STNG database migrations..."
-
+          Write-Host 'Running STNG database migrations...'
           Push-Location $migratorPath
-
-          try
-          {
-              dotnet .\STNG.DbMigrator.dll
-
-              if ($LASTEXITCODE -ne 0)
-              {
-                  throw "STNG DbMigrator failed with exit code $LASTEXITCODE."
-              }
+          try {
+            dotnet .\STNG.DbMigrator.dll
+            if ($LASTEXITCODE -ne 0) {
+              throw "STNG DbMigrator failed with exit code $LASTEXITCODE."
+            }
           }
-          finally
-          {
-              Pop-Location
+          finally {
+            Pop-Location
           }
 
-          Write-Host "STNG database migration completed successfully."
-
-
-      # ------------------------------------------------------
-      # Deploy API to IIS
-      # ------------------------------------------------------
+          Write-Host 'STNG database migration completed successfully.'
 
       - name: Deploy to development IIS
         shell: powershell
