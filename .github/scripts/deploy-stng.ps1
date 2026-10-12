@@ -13,7 +13,10 @@ param
     [string]$HealthUrl,
 
     [Parameter(Mandatory = $false)]
-    [int]$BackupRetentionCount = 10
+    [int]$BackupRetentionCount = 10,
+
+    [Parameter(Mandatory = $false)]
+    [string]$CertificateSourcePath = "C:\Deploy\STNG\Secrets\openiddict.pfx"
 )
 
 Set-StrictMode -Version Latest
@@ -49,6 +52,7 @@ function Invoke-RobocopyMirror
         $Source `
         $Destination `
         /MIR `
+        /XF "openiddict.pfx" `
         /R:3 `
         /W:2 `
         /NFL `
@@ -65,6 +69,30 @@ function Invoke-RobocopyMirror
     }
 
     Write-Host "Robocopy completed with exit code $exitCode."
+}
+
+
+# Restore the OpenIddict signing/encryption certificate only from the protected store.
+function Restore-OpenIddictCertificate
+{
+    param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$CertificatePath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$DestinationDirectory
+    )
+
+    $destinationPath = Join-Path $DestinationDirectory "openiddict.pfx"
+
+    Copy-Item `
+        -LiteralPath $CertificatePath `
+        -Destination $destinationPath `
+        -Force `
+        -ErrorAction Stop
+
+    Write-Host "OpenIddict certificate restored to the IIS site."
 }
 
 
@@ -273,6 +301,26 @@ if ($BackupRetentionCount -lt 1)
 
 
 # ==========================================================
+# Certificate preflight (before any site changes)
+# ==========================================================
+
+if (-not (Test-Path -LiteralPath $CertificateSourcePath -PathType Leaf))
+{
+    throw "OpenIddict certificate is missing or inaccessible: $CertificateSourcePath"
+}
+
+try
+{
+    $certStream = [System.IO.File]::OpenRead($CertificateSourcePath)
+    $certStream.Dispose()
+}
+catch
+{
+    throw "The deployment runner cannot read the OpenIddict certificate at $CertificateSourcePath. Check its Read permissions. $($_.Exception.Message)"
+}
+
+
+# ==========================================================
 # Prepare directories
 # ==========================================================
 
@@ -433,6 +481,15 @@ try
 
 
     # ------------------------------------------------------
+    # Restore certificate after /MIR, before app goes online
+    # ------------------------------------------------------
+
+    Restore-OpenIddictCertificate `
+        -CertificatePath $CertificateSourcePath `
+        -DestinationDirectory $SitePath
+
+
+    # ------------------------------------------------------
     # Bring application online
     # ------------------------------------------------------
 
@@ -552,6 +609,15 @@ catch
                 -Path $backupOfflineFile `
                 -Force
         }
+
+
+        # --------------------------------------------------
+        # Restore certificate after rollback /MIR as well
+        # --------------------------------------------------
+
+        Restore-OpenIddictCertificate `
+            -CertificatePath $CertificateSourcePath `
+            -DestinationDirectory $SitePath
 
 
         # --------------------------------------------------
