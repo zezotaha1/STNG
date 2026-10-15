@@ -13,6 +13,12 @@ public class ParentConfiguration : IEntityTypeConfiguration<Parent>
         builder.ToTable(STNGConsts.DbTablePrefix + "Parents", STNGConsts.DbSchema);
         builder.ConfigureByConvention();
         builder.Property(x => x.Job).HasMaxLength(Parent.MaxJobLength);
+        builder.Property(x => x.DateOfBirth)
+            .IsRequired()
+            .HasColumnType("date");
+        builder.Property(x => x.PhoneCountryIso2)
+            .IsRequired()
+            .HasMaxLength(Parent.PhoneCountryIso2Length);
         builder.HasIndex(x => x.UserId).IsUnique();
         builder.HasOne<IdentityUser>().WithOne().HasForeignKey<Parent>(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);

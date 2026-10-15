@@ -29,7 +29,15 @@ public class ParentLoginTests
     {
         var email = $"{Guid.NewGuid():N}@example.com";
         var response = await _host.Client.PostAsJsonAsync("/api/auth/parent/register", new RegisterParentDto
-        { Email = email, FullName = "Parent Test", Password = Password, Job = "Engineer" });
+        {
+            Email = email,
+            FullName = "Parent Test",
+            Password = Password,
+            Job = "Engineer",
+            DateOfBirth = new DateOnly(1990, 1, 1),
+            PhoneCountryIso2 = "EG",
+            PhoneNumber = "01012345678"
+        });
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         if (verify)
         {
