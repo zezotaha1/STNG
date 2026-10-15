@@ -17,7 +17,14 @@ public class ParentEmailVerificationTests : STNGEntityFrameworkCoreTestBase
     {
         var email = $"{Guid.NewGuid():N}@example.com";
         await GetRequiredService<IParentRegistrationAppService>().RegisterAsync(new()
-        { Email = email, FullName = "Parent", Password = "Strong-Password42!" });
+        {
+            Email = email,
+            FullName = "Parent",
+            Password = "Strong-Password42!",
+            DateOfBirth = new DateOnly(1990, 1, 1),
+            PhoneCountryIso2 = "EG",
+            PhoneNumber = "01012345678"
+        });
         return (email, LastCode());
     }
     private string LastCode() => Regex.Match(GetRequiredService<RecordingEmailSender>().Messages.Last().Body, @"\b\d{6}\b").Value;
@@ -42,7 +49,11 @@ public class ParentEmailVerificationTests : STNGEntityFrameworkCoreTestBase
         await WithUnitOfWorkAsync(async () =>
         {
             var user = (await GetRequiredService<IdentityUserManager>().FindByEmailAsync(email))!;
-            (await GetRequiredService<IRepository<EmailVerificationOtp, Guid>>().SingleAsync(x => x.UserId == user.Id)).AttemptCount.ShouldBe(5);
+            var otp = await GetRequiredService<IRepository<EmailVerificationOtp, Guid>>()
+                .SingleAsync(x => x.UserId == user.Id);
+            otp.AttemptCount.ShouldBe(5);
+            otp.CreationTime.ShouldNotBe(default);
+            otp.LastModificationTime.ShouldNotBeNull();
             user.EmailConfirmed.ShouldBeFalse();
         });
     }

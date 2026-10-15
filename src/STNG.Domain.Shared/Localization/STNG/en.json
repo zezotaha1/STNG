@@ -4,6 +4,17 @@
     "AppName": "STNG",
     "Menu:Home": "Home",
     "LongWelcomeMessage": "Welcome to the application. This is a startup project based on the ABP framework. For more information visit",
-    "Welcome": "Welcome"
+    "Welcome": "Welcome",
+    "STNG:RegistrationUnavailable": "Registration is unavailable for this account.",
+    "STNG:Parent:DateOfBirthRequired": "Date of birth is required.",
+    "STNG:Parent:InvalidDateOfBirth": "Date of birth must not be in the future.",
+    "STNG:Parent:MinimumAgeNotMet": "A parent must be at least 18 years old.",
+    "STNG:Parent:PhoneNumberRequired": "Mobile phone number is required.",
+    "STNG:Parent:PhoneCountryRequired": "Phone country is required.",
+    "STNG:Parent:InvalidPhoneCountry": "Phone country must be a supported two-letter ISO country code.",
+    "STNG:Parent:InvalidMobileNumber": "Enter a valid mobile phone number.",
+    "STNG:Parent:PhoneCountryMismatch": "The phone number does not match the selected country.",
+    "STNG:Parent:UnsupportedPhoneType": "The phone number must be a mobile number.",
+    "STNG:Parent:PhoneExtensionNotSupported": "Phone number extensions are not supported."
   }
 }

@@ -37,6 +37,17 @@
     "Unspecified": "نظام",
     "SeeAllUsers": "رؤية كافة المستخدمين",
     "TakePhoto": "تصوير",
-    "ChoosePhoto": "اختر صورة"
+    "ChoosePhoto": "اختر صورة",
+    "STNG:RegistrationUnavailable": "التسجيل غير متاح لهذا الحساب.",
+    "STNG:Parent:DateOfBirthRequired": "تاريخ الميلاد مطلوب.",
+    "STNG:Parent:InvalidDateOfBirth": "يجب ألا يكون تاريخ الميلاد في المستقبل.",
+    "STNG:Parent:MinimumAgeNotMet": "يجب ألا يقل عمر ولي الأمر عن 18 عامًا.",
+    "STNG:Parent:PhoneNumberRequired": "رقم الهاتف المحمول مطلوب.",
+    "STNG:Parent:PhoneCountryRequired": "دولة رقم الهاتف مطلوبة.",
+    "STNG:Parent:InvalidPhoneCountry": "يجب أن تكون دولة الهاتف رمز ISO مدعومًا من حرفين.",
+    "STNG:Parent:InvalidMobileNumber": "أدخل رقم هاتف محمول صالحًا.",
+    "STNG:Parent:PhoneCountryMismatch": "رقم الهاتف لا يتوافق مع الدولة المحددة.",
+    "STNG:Parent:UnsupportedPhoneType": "يجب أن يكون رقم الهاتف رقمًا محمولًا.",
+    "STNG:Parent:PhoneExtensionNotSupported": "امتدادات أرقام الهاتف غير مدعومة."
   }
 }

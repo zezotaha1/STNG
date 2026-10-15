@@ -23,29 +23,42 @@ public class ParentRegistrationAppService : STNGAppService, IParentRegistrationA
     private readonly VerificationEmailSender _email;
     private readonly IUnitOfWorkManager _units;
     private readonly IOptions<IdentityOptions> _identityOptions;
+    private readonly IInternationalPhoneNumberService _phoneNumbers;
 
     public ParentRegistrationAppService(IdentityUserManager users, IRepository<Parent, Guid> parents,
         IRepository<EmailVerificationOtp, Guid> otps, EmailOtpManager codes, VerificationEmailSender email,
-        IUnitOfWorkManager units, IOptions<IdentityOptions> identityOptions)
+        IUnitOfWorkManager units, IOptions<IdentityOptions> identityOptions,
+        IInternationalPhoneNumberService phoneNumbers)
     {
         _users = users; _parents = parents; _otps = otps; _codes = codes;
-        _email = email; _units = units; _identityOptions = identityOptions;
+        _email = email; _units = units; _identityOptions = identityOptions; _phoneNumbers = phoneNumbers;
     }
 
     [UnitOfWork(IsDisabled = true)]
     public virtual async Task RegisterAsync(RegisterParentDto input)
     {
         var email = input.Email.Trim();
+        if (!input.DateOfBirth.HasValue)
+        {
+            throw new BusinessException(STNGDomainErrorCodes.ParentDateOfBirthRequired);
+        }
+
+        var phone = _phoneNumbers.ValidateAndNormalizeMobile(input.PhoneNumber, input.PhoneCountryIso2);
+        var userId = GuidGenerator.Create();
+        var parent = new Parent(GuidGenerator.Create(), userId, input.DateOfBirth.Value,
+            phone.CountryIso2, DateOnly.FromDateTime(Clock.Now.ToUniversalTime()), input.Job);
+
         string code;
         using (var unit = _units.Begin(requiresNew: true, isTransactional: true))
         {
             await _identityOptions.SetAsync();
             if (await _users.FindByEmailAsync(email) != null)
-                throw new BusinessException("STNG:RegistrationUnavailable");
-            var user = new IdentityUser(GuidGenerator.Create(), GuidGenerator.Create().ToString("N"), email)
+                throw new BusinessException(STNGDomainErrorCodes.RegistrationUnavailable);
+            var user = new IdentityUser(userId, GuidGenerator.Create().ToString("N"), email)
             { Name = input.FullName.Trim() };
+            user.SetPhoneNumber(phone.E164, false);
             (await _users.CreateAsync(user, input.Password)).CheckErrors();
-            await _parents.InsertAsync(new Parent(GuidGenerator.Create(), user.Id, input.Job));
+            await _parents.InsertAsync(parent);
             var issued = _codes.Create(user.Id, user.Email);
             code = issued.Code;
             await _otps.InsertAsync(issued.Otp);
