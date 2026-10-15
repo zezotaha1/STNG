@@ -12,15 +12,19 @@ public class Program
 {
     public async static Task<int> Main(string[] args)
     {
+        var builder = WebApplication.CreateBuilder(args);
+        var logFilePath = ApiLoggingConfiguration.ResolveFilePath(
+            builder.Configuration,
+            builder.Environment.EnvironmentName);
+
         Log.Logger = new LoggerConfiguration()
-            .WriteTo.Async(c => c.File("Logs/logs.txt"))
+            .WriteToApiFile(logFilePath)
             .WriteTo.Async(c => c.Console())
             .CreateBootstrapLogger();
 
         try
         {
             Log.Information("Starting STNG.HttpApi.Host.");
-            var builder = WebApplication.CreateBuilder(args);
             builder.Host
                 .AddAppSettingsSecretsJson()
                 .UseAutofac()
@@ -30,6 +34,7 @@ public class Program
                         .ReadFrom.Configuration(context.Configuration)
                         .MinimumLevel.Override("OpenIddict", LogEventLevel.Warning)
                         .ReadFrom.Services(services)
+                        .WriteToApiFile(logFilePath)
                         .WriteTo.Async(c => c.AbpStudio(services));
                 });
             await builder.AddApplicationAsync<STNGHttpApiHostModule>();
