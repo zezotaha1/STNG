@@ -8,6 +8,9 @@ using Volo.Abp.FeatureManagement;
 using Volo.Abp.Modularity;
 using Volo.Abp.PermissionManagement;
 using Volo.Abp.Uow;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using STNG.FileManagement;
+using Volo.Abp.Authorization.Permissions;
 
 namespace STNG.EntityFrameworkCore;
 
@@ -44,6 +47,13 @@ public class STNGEntityFrameworkCoreTestModule : AbpModule
         context.Services.AddTransient<Volo.Abp.Emailing.IEmailSender>(sp => sp.GetRequiredService<STNG.Authentication.RecordingEmailSender>());
         Configure<STNG.Authentication.EmailOtpOptions>(options =>
             options.HashKey = System.Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)));
+
+        context.Services.AddSingleton<TestPermissionChecker>();
+        context.Services.Replace(ServiceDescriptor.Singleton<IPermissionChecker>(sp => sp.GetRequiredService<TestPermissionChecker>()));
+        context.Services.AddSingleton<RecordingFileStorage>();
+        context.Services.Replace(ServiceDescriptor.Singleton<IFileStorage>(sp => sp.GetRequiredService<RecordingFileStorage>()));
+        context.Services.AddSingleton<TestFileAccessPolicy>();
+        context.Services.AddSingleton<IFileAccessPolicy>(sp => sp.GetRequiredService<TestFileAccessPolicy>());
 
         ConfigureInMemorySqlite(context.Services);
 

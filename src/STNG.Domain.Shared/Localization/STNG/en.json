@@ -4,6 +4,16 @@
     "AppName": "STNG",
     "Menu:Home": "Home",
     "LongWelcomeMessage": "Welcome to the application. This is a startup project based on the ABP framework. For more information visit",
-    "Welcome": "Welcome"
+    "Welcome": "Welcome",
+    "Permission:Files": "File management",
+    "Permission:Files.Upload": "Upload files",
+    "Permission:Files.Attach": "Attach files to resources",
+    "Permission:Files.Detach": "Detach files from resources",
+    "Permission:Files.Replace": "Replace file content",
+    "Permission:Files.Delete": "Delete files",
+    "Permission:Files.ChangeVisibility": "Change file visibility",
+    "Permission:Files.Publish": "Publish files",
+    "Permission:Files.ManageAll": "Manage all files",
+    "Permission:Files.Maintenance": "Run file maintenance"
   }
 }

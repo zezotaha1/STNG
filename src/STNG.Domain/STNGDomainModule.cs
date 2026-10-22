@@ -17,6 +17,7 @@ using Volo.Abp.BackgroundJobs;
 using Volo.Abp.Emailing;
 using Volo.Abp.FeatureManagement;
 using Volo.Abp.Identity;
+using STNG.FileManagement;
 
 namespace STNG;
 
@@ -50,5 +51,12 @@ public class STNGDomainModule : AbpModule
             .Validate(options => System.ComponentModel.DataAnnotations.Validator.TryValidateObject(
                 options, new System.ComponentModel.DataAnnotations.ValidationContext(options), null, true),
                 "Invalid email OTP configuration.");
+
+        context.Services.AddOptions<FileManagementOptions>()
+            .Bind(context.Services.GetConfiguration().GetSection(FileManagementOptions.SectionName))
+            .Validate(options => options.MaximumFileSizeBytes > 0, "Maximum file size must be positive.")
+            .Validate(options => options.MaximumDiscoveryScanCount > 0, "Discovery scan limit must be positive.")
+            .Validate(options => options.AllowedExtensions.Count > 0, "At least one file extension must be allowed.")
+            .Validate(options => options.AllowedContentTypes.Count > 0, "At least one content type must be allowed.");
     }
 }
