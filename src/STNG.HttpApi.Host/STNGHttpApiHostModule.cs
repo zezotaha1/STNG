@@ -42,6 +42,10 @@ using Volo.Abp.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
+using STNG.FileManagement;
+using Volo.Abp.BlobStoring;
+using Volo.Abp.BlobStoring.FileSystem;
 
 namespace STNG;
 
@@ -55,6 +59,7 @@ namespace STNG;
     typeof(STNGEntityFrameworkCoreModule),
     typeof(AbpAccountWebOpenIddictModule),
     typeof(AbpSwashbuckleModule),
+    typeof(AbpBlobStoringFileSystemModule),
     typeof(AbpAspNetCoreSerilogModule)
     )]
 public class STNGHttpApiHostModule : AbpModule
@@ -133,6 +138,8 @@ public class STNGHttpApiHostModule : AbpModule
 
         ConfigureStudio(hostingEnvironment);
         ConfigureAuthentication(context);
+        ConfigureFileStorage(configuration, hostingEnvironment);
+        ConfigureFileUploadLimits(context, configuration);
         ConfigureUrls(configuration);
         ConfigureBundles(hostingEnvironment);
         ConfigureConventionalControllers();
@@ -140,6 +147,40 @@ public class STNGHttpApiHostModule : AbpModule
         ConfigureSwagger(context, configuration);
         ConfigureVirtualFileSystem(context);
         ConfigureCors(context, configuration);
+    }
+
+    private static void ConfigureFileUploadLimits(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        var maximumFileSize = configuration.GetValue<long>(
+            $"{FileManagementOptions.SectionName}:MaximumFileSizeBytes",
+            25 * 1024 * 1024);
+        context.Services.Configure<FormOptions>(options =>
+            options.MultipartBodyLengthLimit = checked(maximumFileSize + 1024 * 1024));
+    }
+
+    private void ConfigureFileStorage(IConfiguration configuration, IHostEnvironment hostingEnvironment)
+    {
+        var configuredRoot = configuration[$"{FileManagementOptions.SectionName}:StorageRoot"];
+        var commonData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+        var storageRoot = Path.GetFullPath(string.IsNullOrWhiteSpace(configuredRoot)
+            ? Path.Combine(commonData, "STNG", "files")
+            : configuredRoot);
+        var normalizedContentRoot = Path.GetFullPath(hostingEnvironment.ContentRootPath)
+            .TrimEnd(Path.DirectorySeparatorChar);
+        var contentRootPrefix = normalizedContentRoot + Path.DirectorySeparatorChar;
+        if (!Path.IsPathFullyQualified(storageRoot) ||
+            string.Equals(storageRoot.TrimEnd(Path.DirectorySeparatorChar), normalizedContentRoot, StringComparison.OrdinalIgnoreCase) ||
+            storageRoot.StartsWith(contentRootPrefix, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("FileManagement:StorageRoot must be an absolute path outside the deployment directory.");
+
+        Configure<FileManagementOptions>(options => options.StorageRoot = storageRoot);
+        Configure<AbpBlobStoringOptions>(options =>
+        {
+            options.Containers.Configure<FileAssetBlobContainer>(container =>
+            {
+                container.UseFileSystem(fileSystem => fileSystem.BasePath = storageRoot);
+            });
+        });
     }
 
     private void ConfigureStudio(IHostEnvironment hostingEnvironment)

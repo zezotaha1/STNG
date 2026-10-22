@@ -16,6 +16,7 @@ using Volo.Abp.Identity.EntityFrameworkCore;
 using Volo.Abp.PermissionManagement.EntityFrameworkCore;
 using Volo.Abp.SettingManagement.EntityFrameworkCore;
 using Volo.Abp.OpenIddict.EntityFrameworkCore;
+using STNG.EntityFrameworkCore.FileManagement;
 
 namespace STNG.EntityFrameworkCore;
 
@@ -27,6 +28,8 @@ public class STNGDbContext :
 {
     public DbSet<STNG.Parents.Parent> Parents { get; set; }
     public DbSet<STNG.Authentication.EmailVerificationOtp> EmailVerificationOtps { get; set; }
+    public DbSet<STNG.FileManagement.FileAsset> FileAssets { get; set; }
+    public DbSet<STNG.FileManagement.FileReference> FileReferences { get; set; }
 
 
     #region Entities from the modules
@@ -76,6 +79,8 @@ public class STNGDbContext :
         builder.ConfigureBlobStoring();
         builder.ApplyConfiguration(new ParentConfiguration());
         builder.ApplyConfiguration(new EmailVerificationOtpConfiguration());
+        builder.ApplyConfiguration(new FileAssetConfiguration());
+        builder.ApplyConfiguration(new FileReferenceConfiguration());
         // Host-only application: prevent concurrent registrations with the same email.
         builder.Entity<IdentityUser>().HasIndex(x => x.NormalizedEmail).IsUnique()
             .HasFilter("[IsDeleted] = 0 AND [TenantId] IS NULL");
