@@ -6,7 +6,7 @@ using Volo.Abp.Domain.Entities.Auditing;
 namespace STNG.Authentication;
 
 [DisableAuditing]
-public class EmailVerificationOtp : CreationAuditedAggregateRoot<Guid>
+public class EmailVerificationOtp : AuditedAggregateRoot<Guid>
 {
     public const string ParentRegistration = "ParentRegistration";
     public Guid UserId { get; private set; }

@@ -36,6 +36,27 @@ public class AuthenticationFlowTests
         { ["grant_type"] = "refresh_token", ["client_id"] = ParentAuthenticationConsts.MobileClientId, ["refresh_token"] = refresh }));
 
     [Fact]
+    public async Task Malformed_date_of_birth_is_rejected_before_registration_side_effects()
+    {
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var messageCount = _host.Email.Messages.Count;
+        var response = await _host.Client.PostAsJsonAsync("/api/auth/parent/register", new
+        {
+            email,
+            fullName = "Invalid Date",
+            password = "Strong-Password42!",
+            dateOfBirth = "2008-02-30",
+            phoneCountryIso2 = "EG",
+            phoneNumber = "01012345678"
+        });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        _host.Email.Messages.Count.ShouldBe(messageCount);
+        await _host.InUnitAsync(async sp =>
+            (await sp.GetRequiredService<IdentityUserManager>().FindByEmailAsync(email)).ShouldBeNull());
+    }
+
+    [Fact]
     public async Task Concurrent_verification_consumes_code_only_once()
     {
         var email = await _flow.RegisterAsync(false);
@@ -53,7 +74,15 @@ public class AuthenticationFlowTests
     [Fact]
     public async Task Concurrent_registration_cannot_create_duplicate_identity_or_profile()
     {
-        var input = new RegisterParentDto { Email = $"{Guid.NewGuid():N}@example.com", FullName = "Race Test", Password = "Strong-Password42!" };
+        var input = new RegisterParentDto
+        {
+            Email = $"{Guid.NewGuid():N}@example.com",
+            FullName = "Race Test",
+            Password = "Strong-Password42!",
+            DateOfBirth = new DateOnly(1990, 1, 1),
+            PhoneCountryIso2 = "EG",
+            PhoneNumber = "01012345678"
+        };
         var responses = await Task.WhenAll(_host.Client.PostAsJsonAsync("/api/auth/parent/register", input), _host.Client.PostAsJsonAsync("/api/auth/parent/register", input));
         responses.Count(x => x.IsSuccessStatusCode).ShouldBe(1);
         foreach (var response in responses) response.StatusCode.ShouldBeOneOf(HttpStatusCode.NoContent, HttpStatusCode.Forbidden, HttpStatusCode.Conflict);
@@ -74,9 +103,11 @@ public class AuthenticationFlowTests
         Guid userId = default;
         await _host.InUnitAsync(async sp => userId = (await sp.GetRequiredService<IdentityUserManager>().FindByEmailAsync(email))!.Id);
         await Should.ThrowAsync<AbpDbConcurrencyException>(() => _host.InUnitAsync(async sp =>
-            await sp.GetRequiredService<IRepository<Parent, Guid>>().InsertAsync(new Parent(Guid.NewGuid(), userId), autoSave: true)));
+            await sp.GetRequiredService<IRepository<Parent, Guid>>().InsertAsync(
+                new Parent(Guid.NewGuid(), userId, new DateOnly(1990, 1, 1), "EG", new DateOnly(2026, 10, 14)), autoSave: true)));
         await Should.ThrowAsync<DbUpdateException>(() => _host.InUnitAsync(async sp =>
-            await sp.GetRequiredService<IRepository<Parent, Guid>>().InsertAsync(new Parent(Guid.NewGuid(), Guid.NewGuid()), autoSave: true)));
+            await sp.GetRequiredService<IRepository<Parent, Guid>>().InsertAsync(
+                new Parent(Guid.NewGuid(), Guid.NewGuid(), new DateOnly(1990, 1, 1), "EG", new DateOnly(2026, 10, 14)), autoSave: true)));
     }
 
     [Fact]
@@ -132,6 +163,29 @@ public class AuthenticationFlowTests
             if (change == "non-parent") await sp.GetRequiredService<IRepository<Parent, Guid>>().DeleteAsync(x => x.UserId == user.Id);
         });
         (await Refresh(refresh)).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Soft_deleted_parent_cannot_use_an_existing_access_token()
+    {
+        var email = await _flow.RegisterAsync();
+        var login = await _flow.LoginAsync(email);
+        login.EnsureSuccessStatusCode();
+        using var tokens = JsonDocument.Parse(await login.Content.ReadAsStringAsync());
+        var accessToken = tokens.RootElement.GetProperty("access_token").GetString();
+        accessToken.ShouldNotBeNullOrWhiteSpace();
+
+        await _host.InUnitAsync(async sp =>
+        {
+            var user = (await sp.GetRequiredService<IdentityUserManager>().FindByEmailAsync(email))!;
+            await sp.GetRequiredService<IRepository<Parent, Guid>>()
+                .DeleteAsync(x => x.UserId == user.Id);
+        });
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        var response = await _host.Client.SendAsync(request);
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     [Fact]

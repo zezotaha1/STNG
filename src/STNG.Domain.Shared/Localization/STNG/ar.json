@@ -47,6 +47,17 @@
     "Permission:Files.ChangeVisibility": "تغيير مستوى ظهور الملف",
     "Permission:Files.Publish": "نشر الملفات",
     "Permission:Files.ManageAll": "إدارة جميع الملفات",
-    "Permission:Files.Maintenance": "تشغيل صيانة الملفات"
+    "Permission:Files.Maintenance": "تشغيل صيانة الملفات",
+    "STNG:RegistrationUnavailable": "التسجيل غير متاح لهذا الحساب.",
+    "STNG:Parent:DateOfBirthRequired": "تاريخ الميلاد مطلوب.",
+    "STNG:Parent:InvalidDateOfBirth": "يجب ألا يكون تاريخ الميلاد في المستقبل.",
+    "STNG:Parent:MinimumAgeNotMet": "يجب ألا يقل عمر ولي الأمر عن 18 عامًا.",
+    "STNG:Parent:PhoneNumberRequired": "رقم الهاتف المحمول مطلوب.",
+    "STNG:Parent:PhoneCountryRequired": "دولة رقم الهاتف مطلوبة.",
+    "STNG:Parent:InvalidPhoneCountry": "يجب أن تكون دولة الهاتف رمز ISO مدعومًا من حرفين.",
+    "STNG:Parent:InvalidMobileNumber": "أدخل رقم هاتف محمول صالحًا.",
+    "STNG:Parent:PhoneCountryMismatch": "رقم الهاتف لا يتوافق مع الدولة المحددة.",
+    "STNG:Parent:UnsupportedPhoneType": "يجب أن يكون رقم الهاتف رقمًا محمولًا.",
+    "STNG:Parent:PhoneExtensionNotSupported": "امتدادات أرقام الهاتف غير مدعومة."
   }
 }
