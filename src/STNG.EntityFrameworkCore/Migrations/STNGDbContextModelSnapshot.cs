@@ -99,6 +99,230 @@ namespace STNG.Migrations
                     b.ToTable("AppEmailVerificationOtps", (string)null);
                 });
 
+            modelBuilder.Entity("STNG.Families.Family", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)")
+                        .HasColumnName("ConcurrencyStamp");
+
+                    b.Property<Guid>("CreatedByParentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CreationRequestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreationTime");
+
+                    b.Property<Guid?>("CreatorId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("CreatorId");
+
+                    b.Property<string>("ExtraProperties")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ExtraProperties");
+
+                    b.Property<Guid?>("ImageFileAssetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("LastModificationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("LastModificationTime");
+
+                    b.Property<Guid?>("LastModifierId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("LastModifierId");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByParentId", "CreationRequestId")
+                        .IsUnique();
+
+                    b.ToTable("AppFamilies", (string)null);
+                });
+
+            modelBuilder.Entity("STNG.Families.FamilyMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreationTime");
+
+                    b.Property<Guid?>("CreatorId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("CreatorId");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastModificationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("LastModificationTime");
+
+                    b.Property<Guid?>("LastModifierId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("LastModifierId");
+
+                    b.Property<DateTime?>("LeftAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ParentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("RemovedByParentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FamilyId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AppFamilyMembers_ActiveOwner")
+                        .HasFilter("[Role] = 0 AND [Status] = 0");
+
+                    b.HasIndex("RemovedByParentId");
+
+                    b.HasIndex("ParentId", "Status");
+
+                    b.ToTable("AppFamilyMembers", (string)null);
+                });
+
+            modelBuilder.Entity("STNG.Families.FamilyMembershipHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ActorParentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Change")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreationTime");
+
+                    b.Property<Guid?>("CreatorId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("CreatorId");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ParentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorParentId");
+
+                    b.HasIndex("MemberId");
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("FamilyId", "OccurredAt");
+
+                    b.ToTable("AppFamilyMembershipHistory", (string)null);
+                });
+
+            modelBuilder.Entity("STNG.Families.OwnershipTransfer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreationTime");
+
+                    b.Property<Guid?>("CreatorId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("CreatorId");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FromParentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("LastModificationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("LastModificationTime");
+
+                    b.Property<Guid?>("LastModifierId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("LastModifierId");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ToParentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FamilyId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AppOwnershipTransfers_Pending")
+                        .HasFilter("[Status] = 0");
+
+                    b.HasIndex("FamilyId", "FromParentId");
+
+                    b.HasIndex("FamilyId", "ToParentId");
+
+                    b.ToTable("AppOwnershipTransfers", (string)null);
+                });
+
             modelBuilder.Entity("STNG.FileManagement.FileAsset", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2225,6 +2449,85 @@ namespace STNG.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("STNG.Families.Family", b =>
+                {
+                    b.HasOne("STNG.Parents.Parent", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByParentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("STNG.Families.FamilyMember", b =>
+                {
+                    b.HasOne("STNG.Families.Family", null)
+                        .WithMany("Members")
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("STNG.Parents.Parent", null)
+                        .WithMany()
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("STNG.Parents.Parent", null)
+                        .WithMany()
+                        .HasForeignKey("RemovedByParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("STNG.Families.FamilyMembershipHistory", b =>
+                {
+                    b.HasOne("STNG.Parents.Parent", null)
+                        .WithMany()
+                        .HasForeignKey("ActorParentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("STNG.Families.Family", null)
+                        .WithMany("MembershipHistory")
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("STNG.Families.FamilyMember", null)
+                        .WithMany()
+                        .HasForeignKey("MemberId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("STNG.Parents.Parent", null)
+                        .WithMany()
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("STNG.Families.OwnershipTransfer", b =>
+                {
+                    b.HasOne("STNG.Families.Family", null)
+                        .WithMany("OwnershipTransfers")
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("STNG.Families.FamilyMember", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId", "FromParentId")
+                        .HasPrincipalKey("FamilyId", "ParentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("STNG.Families.FamilyMember", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId", "ToParentId")
+                        .HasPrincipalKey("FamilyId", "ParentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("STNG.FileManagement.FileReference", b =>
                 {
                     b.HasOne("STNG.FileManagement.FileAsset", null)
@@ -2439,6 +2742,15 @@ namespace STNG.Migrations
                     b.HasOne("Volo.Abp.OpenIddict.Authorizations.OpenIddictAuthorization", null)
                         .WithMany()
                         .HasForeignKey("AuthorizationId");
+                });
+
+            modelBuilder.Entity("STNG.Families.Family", b =>
+                {
+                    b.Navigation("Members");
+
+                    b.Navigation("MembershipHistory");
+
+                    b.Navigation("OwnershipTransfers");
                 });
 
             modelBuilder.Entity("STNG.FileManagement.FileAsset", b =>

@@ -26,6 +26,7 @@ public class AuthenticationHostFixture : WebApplicationFactory<Program>, IAsyncL
     public HttpClient Client { get; private set; } = null!;
     public RecordingEmailSender Email { get; } = new();
     public TestClock Clock { get; } = new();
+    internal FamilyReadProbe FamilyReads { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -44,6 +45,8 @@ public class AuthenticationHostFixture : WebApplicationFactory<Program>, IAsyncL
         builder.ConfigureTestServices(services =>
         {
             services.Configure<AbpDbConnectionOptions>(options => options.ConnectionStrings.Default = _connection);
+            services.Configure<AbpDbContextOptions>(options => options.PreConfigure<STNGDbContext>(context =>
+                context.DbContextOptions.AddInterceptors(FamilyReads)));
             services.Configure<AbpMvcLibsOptions>(options =>
             {
                 options.CheckLibs = false;
