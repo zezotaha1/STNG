@@ -52,6 +52,11 @@ public class STNGDomainModule : AbpModule
                 options, new System.ComponentModel.DataAnnotations.ValidationContext(options), null, true),
                 "Invalid email OTP configuration.");
 
+        context.Services.AddOptions<STNG.Families.OwnershipTransferOptions>()
+            .Bind(context.Services.GetConfiguration().GetSection("Family:OwnershipTransfer"))
+            .Validate(options => options.Lifetime > TimeSpan.Zero,
+                "Ownership transfer lifetime must be positive.");
+
         context.Services.AddOptions<FileManagementOptions>()
             .Bind(context.Services.GetConfiguration().GetSection(FileManagementOptions.SectionName))
             .Validate(options => options.MaximumFileSizeBytes > 0, "Maximum file size must be positive.")

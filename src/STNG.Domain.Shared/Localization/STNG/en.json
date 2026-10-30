@@ -25,6 +25,24 @@
     "STNG:Parent:InvalidMobileNumber": "Enter a valid mobile phone number.",
     "STNG:Parent:PhoneCountryMismatch": "The phone number does not match the selected country.",
     "STNG:Parent:UnsupportedPhoneType": "The phone number must be a mobile number.",
-    "STNG:Parent:PhoneExtensionNotSupported": "Phone number extensions are not supported."
+    "STNG:Parent:PhoneExtensionNotSupported": "Phone number extensions are not supported.",
+    "STNG.Family:1001": "Family not found.",
+    "STNG.Family:1002": "This family is not active.",
+    "STNG.Family:1003": "Enter a family name of at most 120 characters.",
+    "STNG.Family:1004": "This family is archived.",
+    "STNG.Family:1005": "This family changed. Refresh it and retry your request.",
+    "STNG.Family:2001": "This parent already has a family membership.",
+    "STNG.Family:2002": "Family membership not found.",
+    "STNG.Family:2003": "An active family membership is required.",
+    "STNG.Family:2004": "Your family role does not allow this operation.",
+    "STNG.Family:2005": "Transfer ownership before leaving the family.",
+    "STNG.Family:2006": "The family owner cannot be removed.",
+    "STNG.Family:2007": "This role change is not allowed.",
+    "STNG.Family:2008": "An active, verified parent account is required.",
+    "STNG.Family:3001": "An ownership transfer is already pending.",
+    "STNG.Family:3002": "Select another active family member to receive ownership.",
+    "STNG.Family:3003": "This ownership transfer has expired.",
+    "STNG.Family:3004": "This ownership transfer is no longer pending.",
+    "STNG.Family:3005": "This ownership transfer conflicts with the current family state."
   }
 }

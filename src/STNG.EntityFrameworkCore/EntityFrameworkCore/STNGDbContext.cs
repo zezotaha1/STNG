@@ -22,7 +22,7 @@ namespace STNG.EntityFrameworkCore;
 
 [ReplaceDbContext(typeof(IIdentityDbContext))]
 [ConnectionStringName("Default")]
-public class STNGDbContext :
+public partial class STNGDbContext :
     AbpDbContext<STNGDbContext>,
     IIdentityDbContext
 {
@@ -30,6 +30,10 @@ public class STNGDbContext :
     public DbSet<STNG.Authentication.EmailVerificationOtp> EmailVerificationOtps { get; set; }
     public DbSet<STNG.FileManagement.FileAsset> FileAssets { get; set; }
     public DbSet<STNG.FileManagement.FileReference> FileReferences { get; set; }
+    public DbSet<STNG.Families.Family> Families { get; set; }
+    public DbSet<STNG.Families.FamilyMember> FamilyMembers { get; set; }
+    public DbSet<STNG.Families.OwnershipTransfer> OwnershipTransfers { get; set; }
+    public DbSet<STNG.Families.FamilyMembershipHistory> FamilyMembershipHistory { get; set; }
 
 
     #region Entities from the modules
@@ -81,6 +85,10 @@ public class STNGDbContext :
         builder.ApplyConfiguration(new EmailVerificationOtpConfiguration());
         builder.ApplyConfiguration(new FileAssetConfiguration());
         builder.ApplyConfiguration(new FileReferenceConfiguration());
+        builder.ApplyConfiguration(new FamilyConfiguration());
+        builder.ApplyConfiguration(new FamilyMemberConfiguration());
+        builder.ApplyConfiguration(new OwnershipTransferConfiguration());
+        builder.ApplyConfiguration(new FamilyMembershipHistoryConfiguration());
         // Host-only application: prevent concurrent registrations with the same email.
         builder.Entity<IdentityUser>().HasIndex(x => x.NormalizedEmail).IsUnique()
             .HasFilter("[IsDeleted] = 0 AND [TenantId] IS NULL");
@@ -99,7 +107,7 @@ public class STNGDbContext :
     {
         try
         {
-            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            return await SaveFamilyChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         }
         catch (DbUpdateException exception) when (exception.InnerException is SqlException { Number: 2601 or 2627 } &&
             exception.Entries.Any(entry => entry.Entity is STNG.Parents.Parent or STNG.Authentication.EmailVerificationOtp or IdentityUser))

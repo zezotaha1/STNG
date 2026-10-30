@@ -13,6 +13,9 @@ using Volo.Abp.PermissionManagement.EntityFrameworkCore;
 using Volo.Abp.SettingManagement.EntityFrameworkCore;
 using Volo.Abp.BlobStoring.Database.EntityFrameworkCore;
 using Volo.Abp.Studio;
+using Microsoft.EntityFrameworkCore;
+using STNG.Families;
+using Volo.Abp.EntityFrameworkCore.DependencyInjection;
 
 namespace STNG.EntityFrameworkCore;
 
@@ -38,6 +41,9 @@ public class STNGEntityFrameworkCoreModule : AbpModule
 
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        Configure<AbpEntityOptions>(options => options.Entity<Family>(entity =>
+            entity.DefaultWithDetailsFunc = query => query.Include(x => x.Members)
+                .Include(x => x.OwnershipTransfers).AsSplitQuery()));
         context.Services.AddAbpDbContext<STNGDbContext>(options =>
         {
                 /* Remove "includeAllEntities: true" to create

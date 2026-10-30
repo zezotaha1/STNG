@@ -57,6 +57,7 @@ public class STNGDomainSharedModule : AbpModule
         Configure<AbpExceptionLocalizationOptions>(options =>
         {
             options.MapCodeNamespace("STNG", typeof(STNGResource));
+            options.MapCodeNamespace("STNG.Family", typeof(STNGResource));
         });
     }
 }
