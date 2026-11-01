@@ -304,6 +304,12 @@ public class STNGHttpApiHostModule : AbpModule
     }
 
 
+    internal static void ConfigureErrorPages(IApplicationBuilder app) =>
+        app.UseWhen(context =>
+                !context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase) &&
+                !context.Request.Path.StartsWithSegments("/connect", StringComparison.OrdinalIgnoreCase),
+            webPages => webPages.UseErrorPage());
+
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
@@ -320,7 +326,7 @@ public class STNGHttpApiHostModule : AbpModule
 
         if (!env.IsDevelopment())
         {
-            app.UseErrorPage();
+            ConfigureErrorPages(app);
         }
 
         app.UseRouting();
