@@ -19,11 +19,11 @@ public partial class STNGDbContext
         var families = ChangeTracker.Entries<Family>().Where(x => x.State == EntityState.Modified)
             .OrderBy(x => x.Entity.Id).ToList();
         var hasFamilyChanges = ChangeTracker.Entries().Any(x => (x.State is EntityState.Added or EntityState.Modified or EntityState.Deleted) &&
-            x.Entity is Family or FamilyMember or OwnershipTransfer or MembershipHistoryRecord);
+            x.Entity is Family or FamilyMember or OwnershipTransfer or MembershipHistoryRecord or FamilyJoinCredential or FamilyJoinRequest);
 
         foreach (var entry in ChangeTracker.Entries())
         {
-            if (entry.State == EntityState.Deleted && entry.Entity is Family or FamilyMember or OwnershipTransfer or MembershipHistoryRecord)
+            if (entry.State == EntityState.Deleted && entry.Entity is Family or FamilyMember or OwnershipTransfer or MembershipHistoryRecord or FamilyJoinCredential or FamilyJoinRequest)
                 throw new InvalidOperationException("Family records must be retained; use the domain lifecycle.");
             if (entry.State == EntityState.Modified && entry.Entity is MembershipHistoryRecord)
                 throw new InvalidOperationException("Membership history is append-only.");
@@ -32,6 +32,8 @@ public partial class STNGDbContext
                 FamilyMember member => member.FamilyId,
                 OwnershipTransfer transfer => transfer.FamilyId,
                 MembershipHistoryRecord history => history.FamilyId,
+                FamilyJoinCredential credential => credential.FamilyId,
+                FamilyJoinRequest request => request.FamilyId,
                 _ => null
             };
             if (familyId.HasValue && (entry.State is EntityState.Added or EntityState.Modified) &&
@@ -83,6 +85,29 @@ public partial class STNGDbContext
                 var affected = await OwnershipTransfers.Where(x => x.Id == id && x.Status == OwnershipTransferStatus.Pending)
                     .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.Status, status), cancellationToken);
                 if (affected != 1) throw new AbpDbConcurrencyException("The ownership transfer has changed.");
+            }
+
+            // Free filtered unique slots before replacement inserts. All join writes
+            // have already acquired the same Family root lock as membership changes.
+            foreach (var entry in ChangeTracker.Entries<FamilyJoinCredential>().Where(x => x.State == EntityState.Modified &&
+                         x.Property(c => c.Status).OriginalValue == FamilyJoinCredentialStatus.Active &&
+                         x.Entity.Status != FamilyJoinCredentialStatus.Active))
+            {
+                var id = entry.Entity.Id;
+                var status = entry.Entity.Status;
+                var affected = await FamilyJoinCredentials.Where(x => x.Id == id && x.Status == FamilyJoinCredentialStatus.Active)
+                    .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.Status, status), cancellationToken);
+                if (affected != 1) throw new AbpDbConcurrencyException("The join credential has changed.");
+            }
+            foreach (var entry in ChangeTracker.Entries<FamilyJoinRequest>().Where(x => x.State == EntityState.Modified &&
+                         x.Property(r => r.Status).OriginalValue == FamilyJoinRequestStatus.Pending &&
+                         x.Entity.Status != FamilyJoinRequestStatus.Pending))
+            {
+                var id = entry.Entity.Id;
+                var status = entry.Entity.Status;
+                var affected = await FamilyJoinRequests.Where(x => x.Id == id && x.Status == FamilyJoinRequestStatus.Pending)
+                    .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.Status, status), cancellationToken);
+                if (affected != 1) throw new AbpDbConcurrencyException("The join request has changed.");
             }
 
             var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);

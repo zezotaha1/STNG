@@ -40,6 +40,7 @@ using Volo.Abp.Swashbuckle;
 using Volo.Abp.Studio.Client.AspNetCore;
 using Volo.Abp.Security.Claims;
 using System.Threading.RateLimiting;
+using STNG.Families;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
@@ -104,6 +105,12 @@ public class STNGHttpApiHostModule : AbpModule
         context.Services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.AddPolicy(FamilyJoinConsts.SubmissionRateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
+                http.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = configuration.GetValue("Family:Join:AttemptsPerIpPerMinute", 30),
+                    Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
+                }));
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(http =>
                 http.Request.Path.StartsWithSegments("/api/auth") || http.Request.Path.StartsWithSegments("/connect/token")
                     ? RateLimitPartition.GetFixedWindowLimiter(http.Connection.RemoteIpAddress?.ToString() ?? "unknown",

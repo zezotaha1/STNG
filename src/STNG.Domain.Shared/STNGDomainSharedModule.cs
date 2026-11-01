@@ -58,6 +58,7 @@ public class STNGDomainSharedModule : AbpModule
         {
             options.MapCodeNamespace("STNG", typeof(STNGResource));
             options.MapCodeNamespace("STNG.Family", typeof(STNGResource));
+            options.MapCodeNamespace("STNG.Family.Join", typeof(STNGResource));
         });
     }
 }

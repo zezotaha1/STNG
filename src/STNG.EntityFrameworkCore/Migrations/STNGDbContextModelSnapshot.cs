@@ -161,6 +161,166 @@ namespace STNG.Migrations
                     b.ToTable("AppFamilies", (string)null);
                 });
 
+            modelBuilder.Entity("STNG.Families.FamilyJoinCredential", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)")
+                        .HasColumnName("ConcurrencyStamp");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedByParentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreationTime");
+
+                    b.Property<Guid?>("CreatorId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("CreatorId");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExtraProperties")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ExtraProperties");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("LastModificationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("LastModificationTime");
+
+                    b.Property<Guid?>("LastModifierId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("LastModifierId");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("RevokedByParentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SecretHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FamilyId", "CreatedByParentId");
+
+                    b.HasIndex("FamilyId", "CreatedAt", "Id");
+
+                    b.HasIndex("FamilyId", "Kind")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AppFamilyJoinCredentials_ActiveKind")
+                        .HasFilter("[Status] = 0");
+
+                    b.HasIndex("FamilyId", "RevokedByParentId");
+
+                    b.HasIndex("Kind", "SecretHash")
+                        .IsUnique();
+
+                    b.ToTable("AppFamilyJoinCredentials", (string)null);
+                });
+
+            modelBuilder.Entity("STNG.Families.FamilyJoinRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)")
+                        .HasColumnName("ConcurrencyStamp");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreationTime");
+
+                    b.Property<Guid?>("CreatorId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("CreatorId");
+
+                    b.Property<Guid>("CredentialId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ExtraProperties")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ExtraProperties");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("LastModificationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("LastModificationTime");
+
+                    b.Property<Guid?>("LastModifierId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("LastModifierId");
+
+                    b.Property<Guid>("ParentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ReviewedByParentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CredentialId", "Status");
+
+                    b.HasIndex("FamilyId", "CredentialId");
+
+                    b.HasIndex("FamilyId", "ParentId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AppFamilyJoinRequests_PendingParent")
+                        .HasFilter("[Status] = 0");
+
+                    b.HasIndex("FamilyId", "ReviewedByParentId");
+
+                    b.HasIndex("ParentId", "RequestedAt", "Id");
+
+                    b.HasIndex("FamilyId", "Status", "RequestedAt", "Id");
+
+                    b.ToTable("AppFamilyJoinRequests", (string)null);
+                });
+
             modelBuilder.Entity("STNG.Families.FamilyMember", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2456,6 +2616,56 @@ namespace STNG.Migrations
                         .HasForeignKey("CreatedByParentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("STNG.Families.FamilyJoinCredential", b =>
+                {
+                    b.HasOne("STNG.Families.Family", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("STNG.Families.FamilyMember", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId", "CreatedByParentId")
+                        .HasPrincipalKey("FamilyId", "ParentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("STNG.Families.FamilyMember", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId", "RevokedByParentId")
+                        .HasPrincipalKey("FamilyId", "ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("STNG.Families.FamilyJoinRequest", b =>
+                {
+                    b.HasOne("STNG.Families.Family", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("STNG.Parents.Parent", null)
+                        .WithMany()
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("STNG.Families.FamilyJoinCredential", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId", "CredentialId")
+                        .HasPrincipalKey("FamilyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("STNG.Families.FamilyMember", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId", "ReviewedByParentId")
+                        .HasPrincipalKey("FamilyId", "ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("STNG.Families.FamilyMember", b =>
