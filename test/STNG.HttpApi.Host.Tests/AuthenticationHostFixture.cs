@@ -67,8 +67,10 @@ public class AuthenticationHostFixture : WebApplicationFactory<Program>, IAsyncL
         builder.ConfigureTestServices(services =>
         {
             services.Configure<AbpDbConnectionOptions>(options => options.ConnectionStrings.Default = _connection);
+            // Each disposable host owns a singleton materialization probe. Avoid
+            // retaining its distinct provider in EF's process-wide cache.
             services.Configure<AbpDbContextOptions>(options => options.PreConfigure<STNGDbContext>(context =>
-                context.DbContextOptions.AddInterceptors(FamilyReads)));
+                context.DbContextOptions.EnableServiceProviderCaching(false).AddInterceptors(FamilyReads)));
             services.Configure<AbpMvcLibsOptions>(options =>
             {
                 options.CheckLibs = false;
