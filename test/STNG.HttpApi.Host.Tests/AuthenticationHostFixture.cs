@@ -23,6 +23,7 @@ namespace STNG;
 public class AuthenticationHostFixture : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly string _connection = $"Server=(localdb)\\MSSQLLocalDB;Database=STNG_Auth_Tests_{Guid.NewGuid():N};Trusted_Connection=True;TrustServerCertificate=True";
+    internal string ConnectionString => _connection;
     public HttpClient Client { get; private set; } = null!;
     public RecordingEmailSender Email { get; } = new();
     public TestClock Clock { get; } = new();
