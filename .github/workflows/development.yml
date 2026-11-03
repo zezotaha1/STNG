@@ -213,6 +213,7 @@ jobs:
           DOTNET_ENVIRONMENT: Production
           ASPNETCORE_ENVIRONMENT: Production
           ConnectionStrings__Default: ${{ secrets.STNG_DEV_CONNECTION_STRING }}
+          OpenIddict__Applications__STNG_Swagger__RootUrl: https://zezotaha.ddns.net:44391/
         run: |
           $migratorPath = Join-Path `
             $env:GITHUB_WORKSPACE `
