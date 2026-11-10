@@ -132,6 +132,30 @@ public class Family : AuditedAggregateRoot<Guid>
     public void DemoteAdmin(Guid actorParentId, Guid parentId, DateTime now) =>
         ChangeRole(actorParentId, parentId, FamilyMemberRole.Admin, FamilyMemberRole.Member, FamilyMembershipChange.Demoted, now);
 
+    public void RecordJoinCredentialChange(Guid actorParentId)
+    {
+        RequireAdministrator(actorParentId);
+        Touch();
+    }
+
+    public void RecordJoinRequestSubmission(Guid parentId)
+    {
+        EnsureActive();
+        if (_members.Any(x => x.ParentId == parentId && x.Status == FamilyMemberStatus.Active))
+            throw new BusinessException(FamilyErrorCodes.AlreadyMember);
+        Touch();
+    }
+
+    public void RecordJoinRequestReview(Guid actorParentId, Guid requesterParentId)
+    {
+        RequireAdministrator(actorParentId);
+        if (actorParentId == requesterParentId) throw new BusinessException(FamilyJoinErrorCodes.CannotReviewOwnRequest);
+        Touch();
+    }
+
+    // Withdrawal grants no access and remains possible after archival.
+    public void RecordJoinRequestCancellation() => Touch();
+
     private void ChangeRole(Guid actorParentId, Guid parentId, FamilyMemberRole from, FamilyMemberRole to,
         FamilyMembershipChange change, DateTime now)
     {

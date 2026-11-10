@@ -28,7 +28,7 @@ internal sealed class FamilyReadProbe : DbCommandInterceptor, IMaterializationIn
     private void Record(DbCommand command)
     {
         var observation = Volatile.Read(ref _observation);
-        if (observation == null || !new[] { "[AppFamilies]", "[AppFamilyMembers]", "[AppOwnershipTransfers]", "[AppFamilyMembershipHistory]" }
+        if (observation == null || !new[] { "[AppFamilies]", "[AppFamilyMembers]", "[AppOwnershipTransfers]", "[AppFamilyMembershipHistory]", "[AppFamilyJoinCredentials]", "[AppFamilyJoinRequests]" }
                 .Any(table => command.CommandText.Contains(table, StringComparison.Ordinal))) return;
         observation.Commands.Enqueue(new FamilyReadCommand(command.CommandText,
             command.Parameters.Cast<SqlParameter>().Select(parameter => (SqlParameter)((ICloneable)parameter).Clone()).ToArray()));
@@ -50,7 +50,7 @@ internal sealed class FamilyReadProbe : DbCommandInterceptor, IMaterializationIn
 
     public object InitializedInstance(MaterializationInterceptionData materializationData, object entity)
     {
-        if (entity is Family or FamilyMember or OwnershipTransfer or FamilyMembershipHistory)
+        if (entity is Family or FamilyMember or OwnershipTransfer or FamilyMembershipHistory or FamilyJoinCredential or FamilyJoinRequest)
             Volatile.Read(ref _observation)?.MaterializedEntities.Enqueue(entity.GetType());
         return entity;
     }

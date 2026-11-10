@@ -31,6 +31,12 @@ public class STNGHttpApiModule : AbpModule
             options.Map(FamilyErrorCodes.NotFound, HttpStatusCode.NotFound);
             options.Map(FamilyErrorCodes.MembershipNotFound, HttpStatusCode.NotFound);
             options.Map(FamilyErrorCodes.InvalidName, HttpStatusCode.BadRequest);
+            options.Map(FamilyJoinErrorCodes.Unavailable, HttpStatusCode.NotFound);
+            options.Map(FamilyJoinErrorCodes.CannotReviewOwnRequest, HttpStatusCode.Forbidden);
+            options.Map(FamilyJoinErrorCodes.AttemptsLimited, HttpStatusCode.TooManyRequests);
+            options.Map(FamilyJoinErrorCodes.InvalidInput, HttpStatusCode.BadRequest);
+            foreach (var code in new[] { FamilyJoinErrorCodes.PendingRequestExists, FamilyJoinErrorCodes.InvalidTransition, FamilyJoinErrorCodes.RequestConflict })
+                options.Map(code, HttpStatusCode.Conflict);
             foreach (var code in new[] { FamilyErrorCodes.MembershipInactive, FamilyErrorCodes.InsufficientRole, FamilyErrorCodes.ParentNotEligible })
                 options.Map(code, HttpStatusCode.Forbidden);
             foreach (var code in new[] { FamilyErrorCodes.NotActive, FamilyErrorCodes.Archived, FamilyErrorCodes.ConcurrencyConflict,

@@ -34,6 +34,8 @@ public partial class STNGDbContext :
     public DbSet<STNG.Families.FamilyMember> FamilyMembers { get; set; }
     public DbSet<STNG.Families.OwnershipTransfer> OwnershipTransfers { get; set; }
     public DbSet<STNG.Families.FamilyMembershipHistory> FamilyMembershipHistory { get; set; }
+    public DbSet<STNG.Families.FamilyJoinCredential> FamilyJoinCredentials { get; set; }
+    public DbSet<STNG.Families.FamilyJoinRequest> FamilyJoinRequests { get; set; }
 
 
     #region Entities from the modules
@@ -89,6 +91,8 @@ public partial class STNGDbContext :
         builder.ApplyConfiguration(new FamilyMemberConfiguration());
         builder.ApplyConfiguration(new OwnershipTransferConfiguration());
         builder.ApplyConfiguration(new FamilyMembershipHistoryConfiguration());
+        builder.ApplyConfiguration(new FamilyJoinCredentialConfiguration());
+        builder.ApplyConfiguration(new FamilyJoinRequestConfiguration());
         // Host-only application: prevent concurrent registrations with the same email.
         builder.Entity<IdentityUser>().HasIndex(x => x.NormalizedEmail).IsUnique()
             .HasFilter("[IsDeleted] = 0 AND [TenantId] IS NULL");

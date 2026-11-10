@@ -43,6 +43,13 @@
     "STNG.Family:3002": "Select another active family member to receive ownership.",
     "STNG.Family:3003": "This ownership transfer has expired.",
     "STNG.Family:3004": "This ownership transfer is no longer pending.",
-    "STNG.Family:3005": "This ownership transfer conflicts with the current family state."
+    "STNG.Family:3005": "This ownership transfer conflicts with the current family state.",
+    "STNG.Family.Join:1001": "This join credential is unavailable.",
+    "STNG.Family.Join:1002": "You already have a pending request for this family.",
+    "STNG.Family.Join:1003": "This join request cannot undergo that transition.",
+    "STNG.Family.Join:1004": "You cannot review your own join request.",
+    "STNG.Family.Join:1005": "This request identity was already used for a different operation.",
+    "STNG.Family.Join:1006": "Too many join attempts. Wait before trying again.",
+    "STNG.Family.Join:1007": "The join request input is invalid."
   }
 }

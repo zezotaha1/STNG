@@ -57,6 +57,11 @@ public class STNGDomainModule : AbpModule
             .Validate(options => options.Lifetime > TimeSpan.Zero,
                 "Ownership transfer lifetime must be positive.");
 
+        context.Services.AddOptions<STNG.Families.FamilyJoinOptions>()
+            .Bind(context.Services.GetConfiguration().GetSection(STNG.Families.FamilyJoinOptions.SectionName))
+            .Validate(options => options.IsValid(), "Invalid Family join configuration.")
+            .ValidateOnStart();
+
         context.Services.AddOptions<FileManagementOptions>()
             .Bind(context.Services.GetConfiguration().GetSection(FileManagementOptions.SectionName))
             .Validate(options => options.MaximumFileSizeBytes > 0, "Maximum file size must be positive.")

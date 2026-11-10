@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
@@ -28,6 +30,23 @@ public class AuthenticationHostFixture : WebApplicationFactory<Program>, IAsyncL
     public RecordingEmailSender Email { get; } = new();
     public TestClock Clock { get; } = new();
     internal FamilyReadProbe FamilyReads { get; } = new();
+    public string Authority { get; }
+
+    public AuthenticationHostFixture() : this(false) { }
+
+    // Browser tests use a real loopback HTTPS listener and the trusted local
+    // development certificate. Database, email capture and clock remain disposable.
+    internal AuthenticationHostFixture(bool network)
+    {
+        Authority = "https://localhost:44390";
+        if (!network) return;
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        Authority = $"https://localhost:{port}";
+        UseKestrel(options => options.Listen(IPAddress.Loopback, port, endpoint => endpoint.UseHttps()));
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -35,9 +54,11 @@ public class AuthenticationHostFixture : WebApplicationFactory<Program>, IAsyncL
         builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ConnectionStrings:Default"] = _connection,
-            ["AuthServer:Authority"] = "https://localhost:44390",
+            ["AuthServer:Authority"] = Authority,
             ["AuthServer:RequireHttpsMetadata"] = "true",
             ["Authentication:RequestsPerMinute"] = "1000",
+            ["Family:Join:AttemptsPerParentPerMinute"] = "1000",
+            ["Family:Join:AttemptsPerIpPerMinute"] = "1000",
             ["Serilog:MinimumLevel:Default"] = "Warning",
             ["Serilog:MinimumLevel:Override:OpenIddict"] = "Warning",
             ["OpenIddict:Applications:STNG_App:ClientId"] = "",
@@ -46,8 +67,10 @@ public class AuthenticationHostFixture : WebApplicationFactory<Program>, IAsyncL
         builder.ConfigureTestServices(services =>
         {
             services.Configure<AbpDbConnectionOptions>(options => options.ConnectionStrings.Default = _connection);
+            // Each disposable host owns a singleton materialization probe. Avoid
+            // retaining its distinct provider in EF's process-wide cache.
             services.Configure<AbpDbContextOptions>(options => options.PreConfigure<STNGDbContext>(context =>
-                context.DbContextOptions.AddInterceptors(FamilyReads)));
+                context.DbContextOptions.EnableServiceProviderCaching(false).AddInterceptors(FamilyReads)));
             services.Configure<AbpMvcLibsOptions>(options =>
             {
                 options.CheckLibs = false;
@@ -72,7 +95,7 @@ public class AuthenticationHostFixture : WebApplicationFactory<Program>, IAsyncL
 
         Client = CreateClient(new WebApplicationFactoryClientOptions
         {
-            BaseAddress = new Uri("https://localhost:44390"),
+            BaseAddress = new Uri(Authority),
             AllowAutoRedirect = false
         });
 
